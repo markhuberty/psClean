@@ -108,4 +108,54 @@ def build_ngram_mat(string_list, n=1):
     return out
 
 
+def build_incremental_ngram_mat(string_list, n=1):
+    """
+    Given a string list or a string iterator object, builds a sparse term-frequency
+    matrix of ngram frequencies while only looking at each string once.
 
+    Args:
+      string_list:   a list of strings or an iterable string container
+      n:             an integer indicating the ngram length to use
+    Returns:
+    A dict containing a scipy CSR matrix with the ngram frequency vectors, one row
+    per string in string_list, one column per unique ngram in the string corpus;
+    and the column ngram labels as a list
+    """
+    ## goal: do only one pass through the entire list so I can read incrementally
+    ngram_dictionary = []
+    ngram_frequency = []
+    ngrams = []
+
+    ## Generate the ngram frequency vectors one at a time
+    ## and accumulate the unique ngrams into the dictionary
+    for s in string_list:
+        these_ngrams = set([''.join(s[j] for j in range(i, i + n))
+                            for i in range((len(s) - n))]
+                           )
+        these_ngram_freqs = {}
+        for ngram in these_ngrams:
+            these_ngram_freqs[ngram] = len(re.findall(ngram, s))
+            if ngram not in ngram_dictionary:
+                ngram_dictionary.append(ngram)
+        ngram_frequency.append(these_ngram_freqs)
+
+    ## Then generate the tf matrix by using the dict to preserve column order
+    row_idx = []
+    col_idx = []
+    val = []
+    for i, f in enumerate(ngram_frequency):
+        row_idx.extend([i] * len(f))
+        col_idx.extend( [ngram_dictionary.index(f_val) for f_val in f] )
+        val.extend( [f[f_val] for f_val in f] )
+
+    mat = scipy.sparse.csc_matrix((np.array(val),
+                                   (np.array(row_idx),
+                                    np.array(col_idx)
+                                    )
+                                   )
+                                  )
+    out = {'tf_matrix': mat,
+           'ngram_dict': ngram_dictionary
+           }
+    return out
+    

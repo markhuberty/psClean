@@ -11,5 +11,7 @@ sample_strings = ['this is a string',
 test_unigram_mat = psDisambig.build_ngram_mat(sample_strings, n=1)
 test_bigram_mat = psDisambig.build_ngram_mat(sample_strings, n=2)
 
-test_unigram_mat['tf_matrix'].todense()
-test_bigram_mat['tf_matrix'].todense()
+print test_unigram_mat['tf_matrix'].todense()
+print test_bigram_mat['tf_matrix'].todense()
+
+test_incr_unigram_mat = psDisambig.build_incremental_ngram_mat(sample_strings, n=1)
