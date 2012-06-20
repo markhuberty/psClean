@@ -92,26 +92,14 @@ convert_html = {
     ' ': r'<\s*BR\s*>' #break 
     }
 
-#Get rid of SGML tags. Per Magerman et al 2006, only 7 SGML tags were identified in the data. We should validate   
+#Get rid of SGML tags as we are getting rid of all symbols. per Magerman Et al, there were only 7 SGML tags found in the OCT 2011 dataset
 convert_sgml = {
-    '&': r'&AMP;',
-    'Ó': r'&OACUTE;',
-    '§': r'&SECT;', 
-    'Ú': r'&UACUTE;',
-    ' ': r'&#8902;', 
-    '.': r'&BULL;',
-    '!': r'&EXCL;'
-    }
-
-#Purge all commas and periods and other punctuation (company names unlikely to have digits
-punctuation = {
-    '': r'[\.,"\';]',
-    ' ': r'-' #treat -s specially as whitespaces (can be changed later)
+    '': r'&AMP;|&OACUTE;|&SECT;|&UACUTE;|&#8902;|&BULL;|&EXCL;'
     }
 
 #Remove all non alphanumeric or concatenator symbols
 clean_symbols = {
-    '': r'[^\s\w,.;:-]'
+    '': r'[^\s\w]'
     }
 
 #spaces must be single
