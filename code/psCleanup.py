@@ -134,6 +134,9 @@ def encoder(v):
         v: any type
     Returns:
         v as utf-8 if it was unicode, otherwise return v
+    Usage(in context of rows):
+        for row in results:
+            row = tuple(encoder(v) for i,v in enumerate(row))
     """
     if isinstance(v,unicode):
         return v.encode('utf-8')
