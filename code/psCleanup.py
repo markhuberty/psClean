@@ -1,3 +1,4 @@
+# coding=utf8
 ############################
 ## Author: Mark Huberty, Mimi Tam, and Georg Zachmann
 ## Date Begun: 23 May 2012
