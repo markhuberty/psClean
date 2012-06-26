@@ -123,8 +123,11 @@ def make_regex(input_dict):
             expression = '|'.join(v)
             regex_dict[k] = re.compile(expression)
         else:
-            raise ## Throw an error
+            raise Exception('Invalid input type!')## Throw an error
     return regex_dict
+
+def get_dicts():
+    return [convert_html,convert_sgml,clean_symbols,single_space,ampersand,us_uk,uk_us,abbreviations]
 
 def encoder(v):
     """
