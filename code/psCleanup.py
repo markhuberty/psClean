@@ -37,12 +37,24 @@ import unicodedata
 
 ##Some subfunction stubs
 def stdize_case(string): 
-    """Subfunction for string cleaning; Returns a string with all lowercase converted to uppercase characters"""
+    """
+    Small function to standardize case using built-in string function.
+    Args:
+        string
+    Returns:
+        returns the uppercase of input string
+    """
     result = string.upper()
     return result
 
 def rem_diacritics(string):
-    """Subfunction for string cleaning; Returns a unicode String cleaned of accentmarks (diacritics)"""
+    """
+    Small function to remove diacritics/accents by converting to unicode.
+    Args:
+        string
+    Returns:
+        returns the input string with the diacritics/accents removed
+    """
     
     #Need to double check this "Casting" for potential problems!
     s = unicode(string)
@@ -50,12 +62,27 @@ def rem_diacritics(string):
     return result
 
 def rem_trail_spaces(string):
-    """Subfunction for string cleaning; Returns a string with trailing spaces removed"""
+    """
+    Small function to remove trailing spaces with built-in strip function.
+    Args:
+        string
+    Returns:
+        returns the input string with trailing spaces removed
+    """
     s = string.strip()
     return s
 
 #a sort of main function
 def master_clean_dicts(input_string, cleanup_dicts):
+    """
+    A sort of main function to clean an input string using a specified list
+    of dicts.
+    Args:
+        input_string: string to be cleaned
+        cleanup_dicts: list of dicts to be used on the input string
+    Returns:
+        output_string: cleaned string (using the list of dicts)
+    """
     for k, v in enumerate(cleanup_dicts):
         cleanup_dicts[k] = make_regex(v)
         
@@ -65,12 +92,28 @@ def master_clean_dicts(input_string, cleanup_dicts):
     return output_string  
 
 def mult_replace(input_string, regex_dict):
+    """
+    Small function to replace input_string with different values using a
+    a regex_dict.
+    Args:
+        input_string: string to be cleaned
+        regex_dict: dict of regular expressions used to clean the input_string 
+    Returns:
+        output_string: cleaned string (using the regex_dict)
+    """
     output_string = input_string
     for k, v in regex_dict.iteritems():
         output_string = v.sub(k, output_string)
     return output_string
 
 def make_regex(input_dict):
+    """
+    Small function to create a regex_dict from an input dict of regular expressions
+    Args:
+        input_dict: dict of regular expressions to be compiled
+    Returns:
+        regex_dict: dict of compiled regular expressions
+    """
     regex_dict = {}
     for k, v in input_dict.iteritems():
         if isinstance(v, str):
@@ -82,6 +125,20 @@ def make_regex(input_dict):
             raise ## Throw an error
     return regex_dict
 
+def encoder(v):
+    """
+    Small function to encode only the strings to UTF-8.
+    Used mainly to convert items in rows to utf-8 before being written to
+    csv by csv.writer which does not accept unicode.
+    Args:
+        v: any type
+    Returns:
+        v as utf-8 if it was unicode, otherwise return v
+    """
+    if isinstance(v,unicode):
+        return v.encode('utf-8')
+    else:
+        return v
 
 
 #Dictionaries used for cleaning
@@ -239,6 +296,7 @@ us_uk = {
     'NAPPY': r'DIAPER(?=[SD]?)'
     }
 
+#Common UK Spellings replaced with US Spellings
 uk_us = {
     'ANALYZE': r'ANALYSE(?=[DS]?)',
     'ARMOR': r'ARMOUR(?=[S]?|ED?)',
@@ -364,7 +422,8 @@ uk_us = {
     'JEWELRY': r'JEWELLERY(?=S?)',
     'DIAPER': r'NAPPY(?=S?)'
     }
-                            
+
+#Common abbreviations                           
 abbreviations = {
     'MIJ': r'MAATSCHAPPIJ',
     'MIN': r'MINISTERIUM|MINISTERSTVA|MINISTERSTWO|MINISTERSTVAM|MINISTERSTVO|MINISTERSTV|MINISTERO|MINISTERSTVU|MINISTERE|MINISTERUL|MINISTRY|MINISTERSTVE|MINISTER|MINISTERSTVOM|MINISTRE|MINISTERSTVAKH|MINISTERSTVAMI',
@@ -567,13 +626,3 @@ abbreviations = {
     'TRUST': r'TRUSTUL',
     'AKTIENGESELLSCHAFT': r'AGACTIEN GESELLSCHAFT|ACTIENGESELLSCHAFT|AKTIEN GESELLSCHAFT'
     }
-
-#TEMPORARY TEST AREA
-teststring111 = " lkajsldk-lksjfld lkasjdfls;lwkj````####2@@@@@e463p934******rlekj abcdefg   992830498282378282 kskslik23482o9 akss!!!"
-teststring10 = "500    . 19    50 <br>help me I'm a fire<br>ant 5<BR>er8<br>0<BR> < BR > <   BR > lkad </BR> < /BR > <br> <bR> <sfs  BR> <  lsks BR lls > a< Br>b abc"
-teststring11 = "\"1 &AMP;2&aMpP; 3 & AMP ; \"\"\"&AMP; &aMp; &amp; &oacute; &OACUTE; &SECT; &sEcT; & s e c t;\"\""
-teststring12 = "\'hola \'mundo\'abc\'\'\'\"\""
-teststring8 = "    1000 .    90 1000  . 9 m . ta 5 .. 9 Mimi ,   tam 100 ,500 100, 500 1, 200 5 , 5 abkjbk, 4lksl 5 . aab"
-teststring = " stabilised ionised ionises coloured colours music is my aeroplanes aeroplane fibres stabilisers trams pulverising secateurs"
-dictlist=[clean_symbols]
-print master_clean_dicts(stdize_case(teststring111), dictlist)
