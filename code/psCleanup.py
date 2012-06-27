@@ -59,7 +59,8 @@ def rem_diacritics(string):
     
     #Need to double check this "Casting" for potential problems!
     s = unicode(string)
-    result = ''.join((c for c in unicodedata.normalize('NFD',s) if unicodedata.category(c) !='Mn'))
+    result = ''.join((c for c in unicodedata.normalize('NFD',s) if
+                      unicodedata.category(c) !='Mn'))
     return result
 
 def rem_trail_spaces(string):
@@ -151,7 +152,14 @@ def make_regex(input_dict):
     return regex_dict
 
 def get_dicts():
-    return [convert_html,convert_sgml,clean_symbols,single_space,ampersand,us_uk,uk_us,abbreviations]
+    return [convert_html,
+            convert_sgml,
+            clean_symbols,
+            single_space,
+            ampersand,
+            us_uk,
+            abbreviations
+            ]
 
 def encoder(v):
     """
@@ -198,8 +206,39 @@ single_space = {
 #translate all "ands" to other languages... for a more sophisticated version, we should use country codes because it can be dangerous to delete some of the shorter ones such as "I"...
 #using groups (?<=\s) as if we don't then consumes a space and then case: " AND AND " will not be matched in one try as the first match will consume the whitespace of the second one
 ampersand = {
-    '&' : [r'(?<=\s)AND(?=\s)',r'(?<=\s)EN(?=\s)',r'(?<=\s)DHE(?=\s)',r'(?<=\s)və(?=\s)',r'(?<=\s)ETA(?=\s)',r'(?<=\s)I(?=\s)',r'(?<=\s)и(?=\s)',r'(?<=\s)A(?=\s)',r'(?<=\s)OG(?=\s)',r'(?<=\s)KAJ(?=\s)',r'(?<=\s)JA(?=\s)',r'(?<=\s)AT(?=\s)',r'(?<=\s)ET(?=\s)',r'(?<=\s)E(?=\s)',r'(?<=\s)UND(?=\s)',r'(?<=\s)AK(?=\s)',r'(?<=\s)ES(?=\s)',r'(?<=\s)DAN(?=\s)',r'(?<=\s)AGUS(?=\s)',r'(?<=\s)UN(?=\s)',r'(?<=\s)IR(?=\s)',r'(?<=\s)U\s',r'(?<=\s)SI(?=\s)',r'(?<=\s)IN(?=\s)',r'(?<=\s)Y(?=\s)',r'(?<=\s)NA(?=\s)', r'(?<=\s)OCH(?=\s)',r'(?<=\s)VE(?=\s)',r'(?<=\s)VA(?=\s)', r'(?<=\s)SAMT(?=\s)'] 
+    '&' : [r'(?<=\s)AND(?=\s)',
+           r'(?<=\s)EN(?=\s)',
+           r'(?<=\s)DHE(?=\s)',
+           r'(?<=\s)və(?=\s)',
+           r'(?<=\s)ETA(?=\s)',
+           r'(?<=\s)I(?=\s)',
+           r'(?<=\s)и(?=\s)',
+           r'(?<=\s)A(?=\s)',
+           r'(?<=\s)OG(?=\s)',
+           r'(?<=\s)KAJ(?=\s)',
+           r'(?<=\s)JA(?=\s)',
+           r'(?<=\s)AT(?=\s)',
+           r'(?<=\s)ET(?=\s)',
+           r'(?<=\s)E(?=\s)',
+           r'(?<=\s)UND(?=\s)',
+           r'(?<=\s)AK(?=\s)',
+           r'(?<=\s)ES(?=\s)',
+           r'(?<=\s)DAN(?=\s)',
+           r'(?<=\s)AGUS(?=\s)',
+           r'(?<=\s)UN(?=\s)',
+           r'(?<=\s)IR(?=\s)',
+           r'(?<=\s)U\s',
+           r'(?<=\s)SI(?=\s)',
+           r'(?<=\s)IN(?=\s)',
+           r'(?<=\s)Y(?=\s)',
+           r'(?<=\s)NA(?=\s)',
+           r'(?<=\s)OCH(?=\s)',
+           r'(?<=\s)VE(?=\s)',
+           r'(?<=\s)VA(?=\s)',
+           r'(?<=\s)SAMT(?=\s)'
+           ] 
     }
+
 #Common US Spellings replaced with UK Spellings
 us_uk = {
     'ANALYSE': r'ANALYZE(?=[SD]?)',
@@ -457,14 +496,19 @@ uk_us = {
 #Common abbreviations                           
 abbreviations = {
     'MIJ': r'MAATSCHAPPIJ',
-    'MIN': r'MINISTERIUM|MINISTERSTVA|MINISTERSTWO|MINISTERSTVAM|MINISTERSTVO|MINISTERSTV|MINISTERO|MINISTERSTVU|MINISTERE|MINISTERUL|MINISTRY|MINISTERSTVE|MINISTER|MINISTERSTVOM|MINISTRE|MINISTERSTVAKH|MINISTERSTVAMI',
+    'MIN': r'MINISTERIUM|MINISTERSTVA|MINISTERSTWO|MINISTERSTVAM|MINISTERSTVO'
+    '|MINISTERSTV|MINISTERO|MINISTERSTVU|MINISTERE|MINISTERUL|MINISTRY|MINISTERSTVE'
+    '|MINISTER|MINISTERSTVOM|MINISTRE|MINISTERSTVAKH|MINISTERSTVAMI',
     'PREL': r'PRELUCRARE',
-    'BV': r'BESLOTEN VENNOOTSCHAP|BEPERKTE AANSPRAKELIJKHEID|BESLOTEN VENNOOTSCHAP MET',
+    'BV': r'BESLOTEN VENNOOTSCHAP|BEPERKTE AANSPRAKELIJKHEID|'
+    'BESLOTEN VENNOOTSCHAP MET',
     'KOMB': r'KOMBINATU|KOMBINATY|KOMBINAT',
     'NAT': r'NATIONAAL|NATIONALE|NATIONAL|NATIONAUX',
     'NAZ': r'NAZIONALE|NAZIONALI',
     'CONSOL': r'CONSOLIDATED',
-    'CHEM': r'CHEMICKEJ|CHEMICZNY|CHEMICKY|CHEMII|CHEMICALS|CHEMICAL|CHEMISTRY|CHEMICKE|CHEMISCHE|CHEMISCH|CHEMICKYCH|CHEMICZNE|CHEMISKEJ|CHEMIE',
+    'CHEM': r'CHEMICKEJ|CHEMICZNY|CHEMICKY|CHEMII|CHEMICALS|CHEMICAL|'
+    'CHEMISTRY|CHEMICKE|CHEMISCHE|CHEMISCH|'
+    'CHEMICKYCH|CHEMICZNE|CHEMISKEJ|CHEMIE',
     'GHH': r'GUTEHOFFNUNGSCHUTTE|GUTEHOFFNUNGSCHUETTE',
     'ALLG': r'ALLGEMEINE|ALLGEMEINER',
     'STIINT': r'STIINTIFICA',
@@ -646,14 +690,21 @@ abbreviations = {
     'SOC ESPAN': r'SOCIEDAD ESPANOLA',
     'WERKZ MASCHFAB': r'WERKZEUGMASCHINENFABRIK',
     'SOC MEC': r'SOCIETE MECANIQUES|SOCIETE MECANIQUE',
-    'ING': r'INGENIEURBUERO|INGENIEUR|INGENIORSFIRMA|INGENIERIA|INGENIORSFIRMAN|INGENIEURBURO|INGENIEURTECHNISCHES|INGENIEURBUREAU|INGENIEURS|INGENIEURSBUREAU|INGENIOERFIRMAET|INGENJORSFIRMA|INGENIEURGESELLSCHAFT|INGINERIE|INGENIEURTECHNISCHE|INGENIER',
+    'ING': r'INGENIEURBUERO|INGENIEUR|INGENIORSFIRMA|INGENIERIA|INGENIORSFIRMAN|'
+    'INGENIEURBURO|INGENIEURTECHNISCHES|INGENIEURBUREAU|INGENIEURS|INGENIEURSBUREAU|'
+    'INGENIOERFIRMAET|INGENJORSFIRMA|INGENIEURGESELLSCHAFT|INGINERIE|'
+    'INGENIEURTECHNISCHE|INGENIER',
     'CERC': r'CERCETARI|CERCETARE',
     'VEB KOMB': r'VEB KOMBINAT',
-    'TELECOM': r'TELECOMMUNICAZIONI|TELECOMMUNICATION|TELECOMUNICAZIONI|TELECOMMUNICATIONS|TELECOMMUNICACION',
+    'TELECOM': r'TELECOMMUNICAZIONI|TELECOMMUNICATION|TELECOMUNICAZIONI|'
+    'TELECOMMUNICATIONS|TELECOMMUNICACION',
     'PROI': r'PROIECTARE|PROIECTARI',
-    'PHARM': r'PHARMACEUTIQUES|PHARMAZIE|PHARMACEUTICA|PHARMAZEUTISCHE|PHARMAZEUTISCHEN|PHARMACEUTICALS|PHARMAZEUTISCH|PHARMACEUTIQUE|PHARMACEUTICAL|PHARMAZEUTIKA',
+    'PHARM': r'PHARMACEUTIQUES|PHARMAZIE|PHARMACEUTICA|PHARMAZEUTISCHE|'
+    'PHARMAZEUTISCHEN|PHARMACEUTICALS|PHARMAZEUTISCH|PHARMACEUTIQUE|'
+    'PHARMACEUTICAL|PHARMAZEUTIKA',
     'ZENT LAB': r'ZENTRALLABORATORIUM',
     'EQUIP': r'EQUIPMENT|EQUIPEMENT|EQUIPEMENTS|EQUIPMENTS',
     'TRUST': r'TRUSTUL',
-    'AKTIENGESELLSCHAFT': r'AGACTIEN GESELLSCHAFT|ACTIENGESELLSCHAFT|AKTIEN GESELLSCHAFT'
+    'AKTIENGESELLSCHAFT': r'AGACTIEN GESELLSCHAFT|ACTIENGESELLSCHAFT|'
+    'AKTIEN GESELLSCHAFT'
     }
