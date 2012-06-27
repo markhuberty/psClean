@@ -84,11 +84,11 @@ def master_clean_dicts(input_string, cleanup_dicts):
     Returns:
         output_string: cleaned string (using the list of dicts)
     """
-    for i, d in enumerate(cleanup_dicts):
-        cleanup_dicts[i] = make_regex(d)
+    cleanup_regex = [make_regex(d) for d in cleanup_dicts]
         
     output_string = input_string
-    for cleanup_dict in cleanup_dicts:
+    for idx, cleanup_dict in enumerate(cleanup_regex):
+        #print idx
         output_string = mult_replace(output_string, cleanup_dict)    
     return output_string  
 
