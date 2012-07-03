@@ -135,6 +135,7 @@ def get_dicts():
     return [convert_html,
             convert_sgml,
             clean_symbols,
+            concatenators,
             single_space,
             ampersand,
             us_uk,
@@ -173,9 +174,13 @@ convert_sgml = {
     '': r'&AMP;|&OACUTE;|&SECT;|&UACUTE;|&#8902;|&BULL;|&EXCL;'
     }
 
-#Remove all non alphanumeric or concatenator symbols
+#Remove all non alphanumeric
 clean_symbols = {
-    '': r'[^\s\w]'
+    '': r'[^\s\w\-\.,;]'
+    }
+
+concatenators = {
+    ' ': r'[\-\.,;]' #treat -s specially as whitespaces (can be changed later)
     }
 
 #spaces must be single
