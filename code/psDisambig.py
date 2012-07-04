@@ -1,7 +1,8 @@
 ############################
 ## Author: Mark Huberty, Mimi Tam, and Georg Zachmann
 ## Date Begun: 23 May 2012
-## Purpose: Module to disambiguate inventor / assignee names in the PATSTAT patent ##          database
+## Purpose: Module to disambiguate inventor / assignee names in the PATSTAT patent
+##          database
 ## License: BSD Simplified
 ## Copyright (c) 2012, Authors
 ## All rights reserved.
@@ -32,7 +33,7 @@
 ############################
 
 import string
-import scipy.sparse
+import scipy.sparse as sp
 import numpy as np
 import re
 
@@ -118,7 +119,7 @@ def build_incremental_ngram_mat(string_list, n=1):
       n:             an integer indicating the ngram length to use
     Returns:
     A dict containing a scipy CSR matrix with the ngram frequency vectors, one row
-    per string in string_list, one column per unique ngram in the string corpus;
+    per string in string_list, one column per unique ngram in the string corpus;
     and the column ngram labels as a list
     """
     ## goal: do only one pass through the entire list so I can read incrementally
@@ -159,3 +160,15 @@ def build_incremental_ngram_mat(string_list, n=1):
            }
     return out
     
+
+def cosine_similiarty(mat):
+        """
+        Computes the cosine similarity with numpy linear algebra functions. For N strings
+        with P features, returns an N*N sparse matrix of similarities. Should take and
+        return scipy sparse matrix.
+        """
+        numerator = mat.dot(mat.transpose())
+        denominator = sp.csc_matrix(np.sqrt(mat.multiply(mat).sum(axis=1)))
+        denominator_out = denominator.dot(denominator.transpose())
+        out = numerator / denominator_out
+        return out
