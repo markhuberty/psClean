@@ -172,3 +172,25 @@ def cosine_similarity(mat):
         denominator_out = denominator.dot(denominator.transpose())
         out = numerator / denominator_out
         return out
+
+def cosine_similarity_match(mat, threshold=0.8):
+    """
+    Computes the cosine similarity between row X and whole matrix Y, then
+    captures values with similarity >= threshold and returns the match index and
+    similarity value.
+    """
+    nrows = mat.shape[0]
+    matches_out = []
+    for row in xrange(nrows):
+        this_row = mat[row,:]
+        numerator = this_row.dot(mat.transpose())
+        denominator_a = np.sqrt(this_row.multiply(this_row).sum(axis=1))
+        denominator_b = np.sqrt(mat.multiply(mat).sum(axis=1))
+        denominator = sp.csc_matrix(denominator_a[0,0] * denominator_b)
+        cosine_sim = (numerator / denominator.transpose()).tocoo()
+        matches = []
+        for i,j,v in itertools.izip(cosine_sim.row, cosine_sim.col, cosine_sim.data):
+            if v >= threshold and j !=  row:
+                matches.append((j, v))
+        matches_out.append(matches)
+    return(matches_out)
