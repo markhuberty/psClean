@@ -22,7 +22,7 @@ conn = MySQLdb.connect(host="127.0.0.1",
 
 conn_cursor = conn.cursor()
 conn_cursor.execute("""
-SELECT person_name FROM tls206_person LIMIT 10000
+SELECT person_name FROM tls206_person LIMIT 1000
 """)
 
 person_vec = conn_cursor.fetchall()
@@ -74,6 +74,13 @@ t1 = time.time()
 cosine_time = t1 - t0
 print cosine_time / N
 
+## Try the incremental match
+t0 = time.time()
+cosine_match = psDismbig.cosine_similarity_match(ngram_mat['tf_matrix'])
+t1 = time.time
+
+cosine_mat_match_time = t1 = t0
+print cosine_mat_match_time / N
 
 # matches = []
 # vals = []
