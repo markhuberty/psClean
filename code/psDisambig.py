@@ -97,12 +97,12 @@ def build_ngram_mat(string_list, n=1):
         row_idx.extend( [i] * len(f) )
         col_idx.extend( [ngram_dictionary.index(f_val) for f_val in f] )
         val.extend( [f[f_val] for f_val in f] )
-    mat = scipy.sparse.csc_matrix((np.array(val),
-                                   (np.array(row_idx),
-                                    np.array(col_idx)
-                                    )
-                                   )
-                                  )
+    mat = sp.csc_matrix((np.array(val),
+                         (np.array(row_idx),
+                          np.array(col_idx)
+                          )
+                         )
+                        )
     out = {'tf_matrix': mat,
            'ngram_dict': ngram_dictionary
            }
@@ -149,19 +149,19 @@ def build_incremental_ngram_mat(string_list, n=1):
         col_idx.extend( [ngram_dictionary.index(f_val) for f_val in f] )
         val.extend( [f[f_val] for f_val in f] )
 
-    mat = scipy.sparse.csc_matrix((np.array(val),
-                                   (np.array(row_idx),
-                                    np.array(col_idx)
-                                    )
-                                   )
-                                  )
+    mat = sp.csc_matrix((np.array(val),
+                         (np.array(row_idx),
+                          np.array(col_idx)
+                          )
+                         )
+                        )
     out = {'tf_matrix': mat,
            'ngram_dict': ngram_dictionary
            }
     return out
     
 
-def cosine_similiarty(mat):
+def cosine_similarity(mat):
         """
         Computes the cosine similarity with numpy linear algebra functions. For N strings
         with P features, returns an N*N sparse matrix of similarities. Should take and
