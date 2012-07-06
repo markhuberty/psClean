@@ -66,20 +66,20 @@ ngram_mat_time = t1 - t0
 print ngram_mat_time / N
 
 ## Define the cosine function
-t0 = time.time()
-ngram_cosine_mat = psDisambig.cosine_similarity(ngram_mat['tf_matrix'])
-ngram_cosine_mat.setdiag([0] * ngram_cosine_mat.shape[0])
-t1 = time.time()
+#t0 = time.time()
+#ngram_cosine_mat = psDisambig.cosine_similarity(ngram_mat['tf_matrix'])
+#ngram_cosine_mat.setdiag([0] * ngram_cosine_mat.shape[0])
+#t1 = time.time()
 
-cosine_time = t1 - t0
-print cosine_time / N
+#cosine_time = t1 - t0
+#print cosine_time / N
 
 ## Try the incremental match
 t0 = time.time()
-cosine_match = psDismbig.cosine_similarity_match(ngram_mat['tf_matrix'])
-t1 = time.time
+cosine_match = psDisambig.cosine_similarity_match(ngram_mat['tf_matrix'])
+t1 = time.time()
 
-cosine_mat_match_time = t1 = t0
+cosine_mat_match_time = t1 - t0
 print cosine_mat_match_time / N
 
 # matches = []

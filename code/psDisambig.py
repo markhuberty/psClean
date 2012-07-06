@@ -36,6 +36,7 @@ import string
 import scipy.sparse as sp
 import numpy as np
 import re
+import itertools
 
 def build_ngram_dict(string_list, n=1):
     """
@@ -179,6 +180,8 @@ def cosine_similarity_match(mat, threshold=0.8):
     captures values with similarity >= threshold and returns the match index and
     similarity value.
     """
+    print(mat.shape)
+    print(mat.nnz) 
     nrows = mat.shape[0]
     matches_out = []
     for row in xrange(nrows):
