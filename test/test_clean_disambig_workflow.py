@@ -22,7 +22,7 @@ conn = MySQLdb.connect(host="127.0.0.1",
 
 conn_cursor = conn.cursor()
 conn_cursor.execute("""
-SELECT person_name FROM tls206_person LIMIT 1000
+SELECT person_name FROM tls206_person LIMIT 1000000
 """)
 
 person_vec = conn_cursor.fetchall()
@@ -65,6 +65,10 @@ t1 = time.time()
 ngram_mat_time = t1 - t0
 print ngram_mat_time / N
 
+
+## Time creation of the ngram dict
+leading_ngram_dict = psDisambig.build_leading_ngram_dict(clean_names, n=2)
+
 ## Define the cosine function
 #t0 = time.time()
 #ngram_cosine_mat = psDisambig.cosine_similarity(ngram_mat['tf_matrix'])
@@ -74,13 +78,13 @@ print ngram_mat_time / N
 #cosine_time = t1 - t0
 #print cosine_time / N
 
-## Try the incremental match
-t0 = time.time()
-cosine_match = psDisambig.cosine_similarity_match(ngram_mat['tf_matrix'])
-t1 = time.time()
+# ## Try the incremental match
+# t0 = time.time()
+# cosine_match = psDisambig.cosine_similarity_match(ngram_mat['tf_matrix'])
+# t1 = time.time()
 
-cosine_mat_match_time = t1 - t0
-print cosine_mat_match_time / N
+# cosine_mat_match_time = t1 - t0
+# print cosine_mat_match_time / N
 
 # matches = []
 # vals = []

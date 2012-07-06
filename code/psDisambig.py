@@ -56,6 +56,7 @@ def build_ngram_dict(string_list, n=1):
                 ngrams.append(this_ngram)
     return ngrams
 
+
 def build_ngram_freq(string_list, ngram_dict):
     """
     Given an ngram dictionary and a list of strings, returns the ngram frequency
@@ -76,6 +77,7 @@ def build_ngram_freq(string_list, ngram_dict):
             s_freq_dict[n] = n_freq
         frequency_list.append(s_freq_dict)
     return frequency_list
+
 
 def build_ngram_mat(string_list, n=1):
     """
@@ -160,19 +162,32 @@ def build_incremental_ngram_mat(string_list, n=1):
            'ngram_dict': ngram_dictionary
            }
     return out
-    
+
+
+def build_leading_ngram_dict(name_list, leading_n=2):
+    dict_out = {}
+    for name in name_list:
+        leading_letters = name[0:(leading_n - 1)]
+        leading_letter_hash = dmetaphone(leading_letters)
+        if leading_letter_hash in dict_out:
+            dict_out[leading_letter_hash].append(name)
+        else:
+            dict_out[leading_letter_hash] = [name]
+    return dict_out
+
 
 def cosine_similarity(mat):
         """
-        Computes the cosine similarity with numpy linear algebra functions. For N strings
-        with P features, returns an N*N sparse matrix of similarities. Should take and
-        return scipy sparse matrix.
+        Computes the cosine similarity with numpy linear algebra functions. For N
+        strings with P features, returns an N*N sparse matrix of similarities. Should
+        take and return scipy sparse matrix.
         """
         numerator = mat.dot(mat.transpose())
         denominator = sp.csc_matrix(np.sqrt(mat.multiply(mat).sum(axis=1)))
         denominator_out = denominator.dot(denominator.transpose())
         out = numerator / denominator_out
         return out
+
 
 def cosine_similarity_match(mat, threshold=0.8):
     """
