@@ -37,6 +37,7 @@ import scipy.sparse as sp
 import numpy as np
 import re
 import itertools
+import fuzzy
 
 def build_ngram_dict(string_list, n=1):
     """
@@ -168,7 +169,7 @@ def build_leading_ngram_dict(name_list, leading_n=2):
     dict_out = {}
     for name in name_list:
         leading_letters = name[0:(leading_n - 1)]
-        leading_letter_hash = dmetaphone(leading_letters)
+        leading_letter_hash = fuzzy.DMetaphone(leading_letters)[0]
         if leading_letter_hash in dict_out:
             dict_out[leading_letter_hash].append(name)
         else:
