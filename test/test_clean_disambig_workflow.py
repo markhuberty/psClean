@@ -34,20 +34,31 @@ del person_vec
 
 all_dicts = [psCleanup.convert_html,
              psCleanup.convert_sgml,
-             psCleanup.clean_symbols,
+             psCleanup.concatenators,
              psCleanup.single_space,
              psCleanup.ampersand,
              psCleanup.us_uk,
              psCleanup.abbreviations
              ]
 
+def translate_non_alphanumerics(to_translate, translate_to=u' '):
+    not_letters_or_digits = unicode(string.punctuation)
+    translate_table = dict((ord(char), translate_to)
+                           for char in not_letters_or_digits)
+    return to_translate.translate(translate_table)
+
+def strip_punc(s):
+    s_out = s.translate(string.maketrans("",""), string.punctuation)
+    return s_out
 #Function names below are not exact
 N = len(names)
 t0 = time.time()
 clean_names = [psCleanup.rem_diacritics(n) for n in names]
 clean_names = [psCleanup.rem_trail_spaces(n) for n in clean_names]
 clean_names = [psCleanup.stdize_case(n) for n in clean_names]
+clean_names = [translate_non_alphanumerics(n) for n in clean_names]
 clean_names = psCleanup.master_clean_dicts(clean_names, all_dicts)
+clean_names = [n.strip() for n in clean_names]
 t1 = time.time()
 
 ### Works out to ~ 0.05s / entry
@@ -67,8 +78,28 @@ print ngram_mat_time / N
 
 
 ## Time creation of the ngram dict
-leading_ngram_dict = psDisambig.build_leading_ngram_dict(clean_names, n=2)
+t0 = time.time()
+leading_ngram_dict = psDisambig.build_leading_ngram_dict(clean_names, leading_n=3)
+t1 = time.time()
 
+leading_ngram_time = t1 - t0
+print leading_ngram_time / N
+
+## Then do the disambig on each list:
+out = {}
+t0 = time.time()
+for k, v in leading_ngram_dict.iteritems():
+    #print k
+    if len(k) > 1 and len(v) > 0:
+        mat = psDisambig.build_incremental_ngram_mat(v,
+                                                     n=2
+                                                     )
+        out[k] = psDisambig.cosine_similarity_match(mat['tf_matrix'])
+        
+t1 = time.time()
+
+dict_match_time = t1 - t0
+print dict_match_time / N
 ## Define the cosine function
 #t0 = time.time()
 #ngram_cosine_mat = psDisambig.cosine_similarity(ngram_mat['tf_matrix'])

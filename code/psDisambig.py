@@ -168,8 +168,19 @@ def build_incremental_ngram_mat(string_list, n=1):
 def build_leading_ngram_dict(name_list, leading_n=2):
     dict_out = {}
     for name in name_list:
-        leading_letters = name[0:(leading_n - 1)]
-        leading_letter_hash = fuzzy.DMetaphone(leading_letters)[0]
+        leading_letter_hash = name[0:(leading_n)]
+        if leading_letter_hash in dict_out:
+            dict_out[leading_letter_hash].append(name)
+        else:
+            dict_out[leading_letter_hash] = [name]
+    return dict_out
+
+
+def build_leading_metaphone_dict(name_list, leading_n=2):
+    dmeta = fuzzy.DMetaphone(leading_n)
+    dict_out = {}
+    for name in name_list:
+        leading_letter_hash = dmeta(name)[0]
         if leading_letter_hash in dict_out:
             dict_out[leading_letter_hash].append(name)
         else:
