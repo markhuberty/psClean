@@ -212,15 +212,31 @@ def cosine_similarity_match(mat, threshold=0.8):
     nrows = mat.shape[0]
     matches_out = []
     for row in xrange(nrows):
-        this_row = mat[row,:]
-        numerator = this_row.dot(mat.transpose())
-        denominator_a = np.sqrt(this_row.multiply(this_row).sum(axis=1))
-        denominator_b = np.sqrt(mat.multiply(mat).sum(axis=1))
-        denominator = sp.csc_matrix(denominator_a[0,0] * denominator_b)
-        cosine_sim = (numerator / denominator.transpose()).tocoo()
+        cosine_sim = rowwise_cosine_similarity(mat, row)
+        cosine_sim.tocoo()
         matches = []
         for i,j,v in itertools.izip(cosine_sim.row, cosine_sim.col, cosine_sim.data):
             if v >= threshold and j !=  row:
                 matches.append((j, v))
         matches_out.append(matches)
     return(matches_out)
+
+
+def rowwise_cosine_similarity(mat, row):
+    """
+    Calculates the cosine similarity between one row of a matrix and all other rows.
+    Returns a scipy sparse vector result.
+
+    Args:
+       mat: a scipy sparse matrix with rows as cases and columns as features
+       row: an integer row number in mat
+    Returns:
+       A scipy sparse similarity matrix of dimension 1 * nrow(mat)
+    """
+    this_row = mat[row,:]
+    numerator = this_row.dot(mat.transpose())
+    denominator_a = np.sqrt(this_row.multiply(this_row).sum(axis=1))
+    denominator_b = np.sqrt(mat.multiply(mat).sum(axis=1))
+    denominator = sp.csc_matrix(denominator_a[0,0] * denominator_b)
+    cosine_sim = (numerator / denominator.transpose())
+    return(cosine_sim)
