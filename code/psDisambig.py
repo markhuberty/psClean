@@ -153,17 +153,22 @@ def build_incremental_ngram_mat(string_list, n=1):
         col_idx.extend( [ngram_dictionary.index(f_val) for f_val in f] )
         val.extend( [f[f_val] for f_val in f] )
 
-    mat = sp.csc_matrix((np.array(val),
-                         (np.array(row_idx),
-                          np.array(col_idx)
-                          )
-                         )
-                        )
-    out = {'tf_matrix': mat,
-           'ngram_dict': ngram_dictionary
-           }
+    if len(val) > 0:
+        mat = sp.csc_matrix((np.array(val),
+                             (np.array(row_idx),
+                              np.array(col_idx)
+                              )
+                             )
+                            )
+        out = {'tf_matrix': mat,
+               'ngram_dict': ngram_dictionary
+               }
+        
+    else:
+        out = {'tf_matrix': None,
+               'ngram_dict': ngram_dictionary
+               }
     return out
-
 
 def build_leading_ngram_dict(name_list, leading_n=2):
     dict_out = {}
@@ -212,8 +217,7 @@ def cosine_similarity_match(mat, threshold=0.8):
     nrows = mat.shape[0]
     matches_out = []
     for row in xrange(nrows):
-        cosine_sim = rowwise_cosine_similarity(mat, row)
-        cosine_sim.tocoo()
+        cosine_sim = rowwise_cosine_similarity(mat, row).tocoo()
         matches = []
         for i,j,v in itertools.izip(cosine_sim.row, cosine_sim.col, cosine_sim.data):
             if v >= threshold and j !=  row:
