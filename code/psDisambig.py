@@ -217,14 +217,26 @@ def cosine_similarity_match(mat, threshold=0.8):
     nrows = mat.shape[0]
     matches_out = []
     for row in xrange(nrows):
-        cosine_sim = rowwise_cosine_similarity(mat, row).tocoo()
-        matches = []
-        for i,j,v in itertools.izip(cosine_sim.row, cosine_sim.col, cosine_sim.data):
-            if v >= threshold and j !=  row:
-                matches.append((j, v))
+        cosine_sim = rowwise_cosine_similarity(mat, mat[row, :])
+        cosine_sim.tocoo()
+        matches = get_matches(cosine_sim, threshold)
         matches_out.append(matches)
     return(matches_out)
 
+def get_matches(sim_mat, threshold):
+    """
+    Filters a single row (sim_mat) in a sparse matrix for values greater than a threshold value.
+    Args:
+       sim_mat: a scipy sparse coo matrix of dimension 1 * N
+       threshold: a threshold value (greater values = more restrictive)
+    Returns:
+       matches: a list of tuples of form (index, similiarity value)
+    """
+    matches = []
+    for i,j,v in itertools.izip(cosine_sim.row, cosine_sim.col, cosine_sim.data):
+            if v >= threshold and j !=  row:
+                matches.append((j, v))
+    return matches
 
 def rowwise_cosine_similarity(mat, row):
     """
@@ -237,9 +249,8 @@ def rowwise_cosine_similarity(mat, row):
     Returns:
        A scipy sparse similarity matrix of dimension 1 * nrow(mat)
     """
-    this_row = mat[row,:]
-    numerator = this_row.dot(mat.transpose())
-    denominator_a = np.sqrt(this_row.multiply(this_row).sum(axis=1))
+    numerator = row.dot(mat.transpose())
+    denominator_a = np.sqrt(row.multiply(row).sum(axis=1))
     denominator_b = np.sqrt(mat.multiply(mat).sum(axis=1))
     denominator = sp.csc_matrix(denominator_a[0,0] * denominator_b)
     cosine_sim = (numerator / denominator.transpose())
