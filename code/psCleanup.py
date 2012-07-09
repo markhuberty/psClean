@@ -59,7 +59,7 @@ def rem_diacritics(string):
     
     #Don't need following line if we are using unicode data already
     #s = unicode(string)
-    result = ''.join((c for c in unicodedata.normalize('NFD',s) if
+    result = ''.join((c for c in unicodedata.normalize('NFD',string) if
                       unicodedata.category(c) !='Mn'))
     return result
 
