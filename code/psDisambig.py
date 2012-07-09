@@ -36,6 +36,8 @@ import string
 import scipy.sparse as sp
 import numpy as np
 import re
+import itertools
+import fuzzy
 
 def build_ngram_dict(string_list, n=1):
     """
@@ -54,6 +56,7 @@ def build_ngram_dict(string_list, n=1):
             if this_ngram not in ngrams:
                 ngrams.append(this_ngram)
     return ngrams
+
 
 def build_ngram_freq(string_list, ngram_dict):
     """
@@ -76,6 +79,7 @@ def build_ngram_freq(string_list, ngram_dict):
         frequency_list.append(s_freq_dict)
     return frequency_list
 
+
 def build_ngram_mat(string_list, n=1):
     """
     Given a string list, build a sparse term-frequency matrix of ngram frequencies
@@ -97,12 +101,12 @@ def build_ngram_mat(string_list, n=1):
         row_idx.extend( [i] * len(f) )
         col_idx.extend( [ngram_dictionary.index(f_val) for f_val in f] )
         val.extend( [f[f_val] for f_val in f] )
-    mat = scipy.sparse.csc_matrix((np.array(val),
-                                   (np.array(row_idx),
-                                    np.array(col_idx)
-                                    )
-                                   )
-                                  )
+    mat = sp.csc_matrix((np.array(val),
+                         (np.array(row_idx),
+                          np.array(col_idx)
+                          )
+                         )
+                        )
     out = {'tf_matrix': mat,
            'ngram_dict': ngram_dictionary
            }
@@ -149,26 +153,105 @@ def build_incremental_ngram_mat(string_list, n=1):
         col_idx.extend( [ngram_dictionary.index(f_val) for f_val in f] )
         val.extend( [f[f_val] for f_val in f] )
 
-    mat = scipy.sparse.csc_matrix((np.array(val),
-                                   (np.array(row_idx),
-                                    np.array(col_idx)
-                                    )
-                                   )
-                                  )
-    out = {'tf_matrix': mat,
-           'ngram_dict': ngram_dictionary
-           }
+    if len(val) > 0:
+        mat = sp.csc_matrix((np.array(val),
+                             (np.array(row_idx),
+                              np.array(col_idx)
+                              )
+                             )
+                            )
+        out = {'tf_matrix': mat,
+               'ngram_dict': ngram_dictionary
+               }
+        
+    else:
+        out = {'tf_matrix': None,
+               'ngram_dict': ngram_dictionary
+               }
     return out
-    
 
-def cosine_similiarty(mat):
+def build_leading_ngram_dict(name_list, leading_n=2):
+    dict_out = {}
+    for name in name_list:
+        leading_letter_hash = name[0:(leading_n)]
+        if leading_letter_hash in dict_out:
+            dict_out[leading_letter_hash].append(name)
+        else:
+            dict_out[leading_letter_hash] = [name]
+    return dict_out
+
+
+def build_leading_metaphone_dict(name_list, leading_n=2):
+    dmeta = fuzzy.DMetaphone(leading_n)
+    dict_out = {}
+    for name in name_list:
+        leading_letter_hash = dmeta(name)[0]
+        if leading_letter_hash in dict_out:
+            dict_out[leading_letter_hash].append(name)
+        else:
+            dict_out[leading_letter_hash] = [name]
+    return dict_out
+
+
+def cosine_similarity(mat):
         """
-        Computes the cosine similarity with numpy linear algebra functions. For N strings
-        with P features, returns an N*N sparse matrix of similarities. Should take and
-        return scipy sparse matrix.
+        Computes the cosine similarity with numpy linear algebra functions. For N
+        strings with P features, returns an N*N sparse matrix of similarities. Should
+        take and return scipy sparse matrix.
         """
         numerator = mat.dot(mat.transpose())
         denominator = sp.csc_matrix(np.sqrt(mat.multiply(mat).sum(axis=1)))
         denominator_out = denominator.dot(denominator.transpose())
         out = numerator / denominator_out
         return out
+
+
+def cosine_similarity_match(mat, threshold=0.8):
+    """
+    Computes the cosine similarity between row X and whole matrix Y, then
+    captures values with similarity >= threshold and returns the match index and
+    similarity value.
+    """
+    print(mat.shape)
+    print(mat.nnz) 
+    nrows = mat.shape[0]
+    matches_out = []
+    for row in xrange(nrows):
+        cosine_sim = rowwise_cosine_similarity(mat, mat[row, :])
+        cosine_sim.tocoo()
+        matches = get_matches(cosine_sim, threshold)
+        matches_out.append(matches)
+    return(matches_out)
+
+def get_matches(sim_mat, threshold):
+    """
+    Filters a single row (sim_mat) in a sparse matrix for values greater than a threshold value.
+    Args:
+       sim_mat: a scipy sparse coo matrix of dimension 1 * N
+       threshold: a threshold value (greater values = more restrictive)
+    Returns:
+       matches: a list of tuples of form (index, similiarity value)
+    """
+    matches = []
+    for i,j,v in itertools.izip(cosine_sim.row, cosine_sim.col, cosine_sim.data):
+            if v >= threshold and j !=  row:
+                matches.append((j, v))
+    return matches
+
+def rowwise_cosine_similarity(mat, row):
+    """
+    Calculates the cosine similarity between one row of a matrix and all other rows.
+    Returns a scipy sparse vector result.
+
+    Args:
+       mat: a scipy sparse matrix with rows as cases and columns as features
+       row: an integer row number in mat
+    Returns:
+       A scipy sparse similarity matrix of dimension 1 * nrow(mat)
+    """
+    numerator = row.dot(mat.transpose())
+    denominator_a = np.sqrt(row.multiply(row).sum(axis=1))
+    denominator_b = np.sqrt(mat.multiply(mat).sum(axis=1))
+    denominator = sp.csc_matrix(denominator_a[0,0] * denominator_b)
+    cosine_sim = (numerator / denominator.transpose())
+    return(cosine_sim)

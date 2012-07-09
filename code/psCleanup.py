@@ -88,11 +88,10 @@ def master_clean_dicts(input_string_list, cleanup_dicts):
     Returns:
     A list of cleaned strings of same length as input_string_list
     """
-    for i, d in enumerate(cleanup_dicts):
-        cleanup_dicts[i] = make_regex(d)
+    regex_dicts = [make_regex(d) for d in cleanup_dicts]
     
     for i, s in enumerate(input_string_list):
-        for cleanup_dict in cleanup_dicts:
+        for cleanup_dict in regex_dicts:
             s = mult_replace(s, cleanup_dict)
         input_string_list[i] = s
     return input_string_list  
