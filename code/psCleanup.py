@@ -166,6 +166,9 @@ def decoder(v,encoding='utf-8'):
         v: utf-8
     Returns:
         v as unicode if it was utf-8, otherwise return v
+    Usage (in context of a csv reader):
+        for row in reader:
+            decoded.append([decoder(cell) for cell in row])
     """
     if isinstance(v,basestring):
         if not isinstance(v,unicode):
