@@ -159,6 +159,17 @@ def encoder(v):
     else:
         return v
 
+def decoder(v,encoding='utf-8'):
+    """
+    Small function to decode for csv reader. Needed to not decode longs.
+    Args:
+        v: utf-8
+    Returns:
+        v as unicode if it was utf-8, otherwise return v
+    """
+    if isinstance(v,basestring):
+        if not isinstance(v,unicode):
+            return unicode(v,encoding)
 
 #Dictionaries used for cleaning
 #IMPORTANT NOTE: These all assume that case standardization has already been performed!
