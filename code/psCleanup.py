@@ -57,9 +57,9 @@ def rem_diacritics(string):
         returns the input string with the diacritics/accents removed
     """
     
-    #Need to double check this "Casting" for potential problems!
-    s = unicode(string)
-    result = ''.join((c for c in unicodedata.normalize('NFD',s) if
+    #Don't need following line if we are using unicode data already
+    #s = unicode(string)
+    result = ''.join((c for c in unicodedata.normalize('NFD',string) if
                       unicodedata.category(c) !='Mn'))
     return result
 
@@ -152,13 +152,27 @@ def encoder(v):
         v as utf-8 if it was unicode, otherwise return v
     Usage(in context of rows):
         for row in results:
-            row = tuple(encoder(v) for i,v in enumerate(row))
+            writer.writerow(tuple(encoder(v) for i,v in enumerate(row)))
     """
     if isinstance(v,unicode):
         return v.encode('utf-8')
     else:
         return v
 
+def decoder(v,encoding='utf-8'):
+    """
+    Small function to decode for csv reader. Needed to not decode longs.
+    Args:
+        v: utf-8
+    Returns:
+        v as unicode if it was utf-8, otherwise return v
+    Usage (in context of a csv reader):
+        for row in reader:
+            decoded.append([decoder(cell) for cell in row])
+    """
+    if isinstance(v,basestring):
+        if not isinstance(v,unicode):
+            return unicode(v,encoding)
 
 #Dictionaries used for cleaning
 #IMPORTANT NOTE: These all assume that case standardization has already been performed!
