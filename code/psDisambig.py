@@ -170,6 +170,7 @@ def build_incremental_ngram_mat(string_list, n=1):
                }
     return out
 
+
 def build_leading_ngram_dict(name_list, leading_n=2):
     dict_out = {}
     for name in name_list:
@@ -181,15 +182,29 @@ def build_leading_ngram_dict(name_list, leading_n=2):
     return dict_out
 
 
-def build_leading_metaphone_dict(name_list, leading_n=2):
-    dmeta = fuzzy.DMetaphone(leading_n)
+def multiblock_ngram(name_list, block_1, leading_n=2):
+    """
+    Blocks names in two stages, first by the set of unique values in block_1,
+    then by the leading_n set of letters in the name string
+    Args:
+       name_list: a list of name strings
+       block_1:   a list of length name_list containing a set of unique
+                  levels to block by
+       leading_n: number of leading characters in names to block by after blocking by
+                  block_1
+    Returns:
+       A nested dict of structure dict[block1 keys][leading_n keys]
+    """
     dict_out = {}
-    for name in name_list:
-        leading_letter_hash = dmeta(name)[0]
-        if leading_letter_hash in dict_out:
-            dict_out[leading_letter_hash].append(name)
+    for block, name in zip(block_1, name_list):
+        leading_letter_hash = name[0:leading_n]
+        if block in dict_out:
+            if leading_letter_hash in dict_out[block]:
+                dict_out[block][leading_letter_hash].append(name)
+            else:
+                dict_out[block][leading_letter_hash] = [name]
         else:
-            dict_out[leading_letter_hash] = [name]
+            dict_out[block] = {leading_letter_hash:[name]}
     return dict_out
 
 
@@ -223,6 +238,7 @@ def cosine_similarity_match(mat, threshold=0.8):
         matches_out.append(matches)
     return(matches_out)
 
+
 def get_matches(sim_mat, threshold):
     """
     Filters a single row (sim_mat) in a sparse matrix for values greater than a threshold value.
@@ -237,6 +253,7 @@ def get_matches(sim_mat, threshold):
             if v >= threshold and j !=  row:
                 matches.append((j, v))
     return matches
+
 
 def rowwise_cosine_similarity(mat, row):
     """
