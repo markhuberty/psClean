@@ -233,13 +233,13 @@ def cosine_similarity_match(mat, threshold=0.8):
     matches_out = []
     for row in xrange(nrows):
         cosine_sim = rowwise_cosine_similarity(mat, mat[row, :])
-        cosine_sim.tocoo()
-        matches = get_matches(cosine_sim, threshold)
+        cosine_sim = cosine_sim.tocoo()
+        matches = get_matches(cosine_sim, row, threshold)
         matches_out.append(matches)
     return(matches_out)
 
 
-def get_matches(sim_mat, threshold):
+def get_matches(sim_mat, row_idx, threshold):
     """
     Filters a single row (sim_mat) in a sparse matrix for values greater than a threshold value.
     Args:
@@ -249,8 +249,8 @@ def get_matches(sim_mat, threshold):
        matches: a list of tuples of form (index, similiarity value)
     """
     matches = []
-    for i,j,v in itertools.izip(cosine_sim.row, cosine_sim.col, cosine_sim.data):
-            if v >= threshold and j !=  row:
+    for i,j,v in itertools.izip(sim_mat.row, sim_mat.col, sim_mat.data):
+            if v >= threshold and j !=  row_idx:
                 matches.append((j, v))
     return matches
 
