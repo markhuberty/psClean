@@ -125,7 +125,7 @@ def make_regex(input_dict):
             regex_dict[k] = re.compile(v)
         elif isinstance(v, list):
             expression = '|'.join(v)
-            regex_dict[k] = re.compile(expression)
+            regex_dict[k] = re.compile(expression, re.UNICODE)
         else:
             raise Exception('Invalid input type!')## Throw an error
     return regex_dict
