@@ -64,6 +64,10 @@ conn_cursor = conn.cursor()
 conn_cursor.execute('SELECT COUNT(DISTINCT(person_id)) from tls206_person)')
 est_unique_ids = conn_cursor.fetchall()
 
+## Generate the parallelized client
+rc = Client()
+lview = rc.load_balanced_biew()
+lview.block = True
 
 while N <= est_unique_ids:
     this_query = base_query + str(row_idx) + ',' + str(row_idx + block_size)
@@ -96,6 +100,7 @@ while N <= est_unique_ids:
     del db_response
 
     max_seq_id = max(unique_id)
+
     # Parallelize the clean step
     cleaned_rows = lview.map(clean_wrapper,
                              unique_name
