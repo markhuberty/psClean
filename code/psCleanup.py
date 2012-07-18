@@ -192,8 +192,9 @@ clean_symbols = {
     '': r'[^\s\w\-\.,;]'
     }
 
+#treat -.,; as whitespaces ONLY if surrounded by alphanumeric chars
 concatenators = {
-    ' ': r'[\-\.,;]' #treat -s specially as whitespaces (can be changed later)
+    ' ': r'(?<=[a-zA-Z\d])[\-\.,;](?=[a-zA-Z\d])'
     }
 
 #spaces must be single
