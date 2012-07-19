@@ -21,12 +21,12 @@ all_dicts = [psCleanup.convert_html,
              psCleanup.us_uk,
              psCleanup.abbreviations
              ]
-
+all_regex = [psCleanup.make_regex(d) for d in all_dicts]
 ## Wrap the clean sequence in a useful function
 def clean_wrapper(name_string, dict_list):
     out = psCleanup.rem_diacritics(name_string)
     out = psCleanup.stdize_case(out)
-    out = psCleanup.master_clean_dicts([out], all_dicts)
+    out = psCleanup.master_clean_regex([out], dict_list)
     out = out[0].strip()
     return(out)
 
@@ -52,8 +52,7 @@ conn = MySQLdb.connect(host="127.0.0.1",
                        passwd="patstat_huberty",
                        db="patstatOct2011",
                        use_unicode=True,
-                       charset='utf8',
-                       cursorclass = MySQLdb.cursors.SSCursor
+                       charset='utf8'
                        )
 
 conn_cursor = conn.cursor()
@@ -82,7 +81,7 @@ conn_cursor.execute(initial_query)
 #         N += 1
 #         if N % 1000 == 0:
 #             print N, total_time, total_time / N
-
+n_fetch = 10000
 with open('../data/full_cleaned_name_list.csv', 'wt') as output_conn:
     writer = csv.writer(output_conn)
     total_time = 0
@@ -91,7 +90,7 @@ with open('../data/full_cleaned_name_list.csv', 'wt') as output_conn:
     max_ids = 25000
     while True:
         try:
-            row = conn_cursor.fetchone()
+            row = conn_cursor.fetchone(n_fetch)
         except MySQLdb.OperationalError:
             ## DB connection lost, re-set it
             ## with maxid
@@ -102,8 +101,7 @@ with open('../data/full_cleaned_name_list.csv', 'wt') as output_conn:
                                    passwd="patstat_huberty",
                                    db="patstatOct2011",
                                    use_unicode=True,
-                                   charset='utf8',
-                                   cursorclass = MySQLdb.cursors.SSCursor
+                                   charset='utf8'
                                    )
             this_query = subsequent_query + str(person_id)
             print 're-establishing connection'
@@ -122,7 +120,7 @@ with open('../data/full_cleaned_name_list.csv', 'wt') as output_conn:
                 pid_range.pop(0)
         else:
             continue
-        clean_person_name = clean_wrapper(person_name, all_dicts)
+        clean_person_name = clean_wrapper(person_name, all_regex)
         clean_person_name = psCleanup.encoder(clean_person_name)
         writer.writerow([person_id, clean_person_name])
         t1 = time.time()
