@@ -96,6 +96,29 @@ def master_clean_dicts(input_string_list, cleanup_dicts):
         input_string_list[i] = s
     return input_string_list  
 
+
+#a sort of main function
+def master_clean_regex(input_string_list, regex_dicts):
+    """
+    Checks each string in an list and does a find/replace based on
+    values in a list of replace:find regex
+    
+    Args:
+        input_string_list: string to be cleaned
+        cleanup_dicts: list of dicts to be used on the input string.
+        Dicts should be replace:find where find is either a string or
+        a list of strings
+    Returns:
+    A list of cleaned strings of same length as input_string_list
+    """
+    
+    for i, s in enumerate(input_string_list):
+        for cleanup_dict in regex_dicts:
+            s = mult_replace(s, cleanup_dict)
+        input_string_list[i] = s
+    return input_string_list  
+
+
 def mult_replace(input_string, regex_dict):
     """
     Small function to replace input_string with different values using a
