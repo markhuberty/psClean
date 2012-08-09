@@ -12,11 +12,12 @@ import gc
 namefile_path = '/mnt/db_master/patstat_raw/dvd1'
 namefiles = ['tls206_part0' + str(i) + '_clean.txt' for i in range(1,6)]
 
+## Generate the parallel clients
 rc = Client()
-#lview = rc.dview()
 dview = rc[:]
 dview.block = True
 
+## Sync the necessary imports and path settings
 dview.execute('import sys')
 dview.execute('sys.path.append("/home/markhuberty/Documents/psClean/code")')
 
@@ -25,7 +26,8 @@ with dview.sync_imports():
     import psDisambig
 
 
-## Define the cleaning dicts
+## Define the cleaning dicts and push to each
+## client node
 all_dicts = [psCleanup.convert_html,
              psCleanup.convert_sgml,
              psCleanup.clean_symbols,
@@ -38,7 +40,10 @@ all_dicts = [psCleanup.convert_html,
 regex_dicts = [psCleanup.make_regex(d) for d in all_dicts]
 dview.push({'all_dicts': all_dicts})
 dview.push({'regex_dicts': regex_dicts})
-## Wrap the clean sequence in a useful function
+
+
+## Wrap the clean sequence in a useful function that
+## can be directly parallelized. T
 @dview.parallel(block=True)
 def clean_wrapper(name_dict, dict_list=regex_dicts):
     name_string = psCleanup.decoder(name_dict['person_name'])
@@ -59,6 +64,8 @@ fieldnames = ['person_id',
               ]
 block_size = 50000
 
+## Define a chunker to import N rows and clean
+## in parallel
 def gen_chunks(reader, chunksize=100):
         """
         Chunk generator. Take a CSV `reader` and yield
