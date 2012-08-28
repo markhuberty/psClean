@@ -198,14 +198,17 @@ def decoder(v,encoding='utf-8'):
             return unicode(v,encoding)
 
 #Dictionaries used for cleaning
-#IMPORTANT NOTE: These all assume that case standardization has already been performed!
+#IMPORTANT NOTE: These all assume that case standardization has already been 
+#performed!
 
-#Get rid of HTML tags. For extendability using dictionary. However, per Magerman et al 2006, only HTML tags were <BR>, we should validate  
+#Get rid of HTML tags. For extendability using dictionary. However, per 
+#Magerman et al 2006, only HTML tags were <BR>, we should validate  
 convert_html = {
     ' ': r'<\s*BR\s*>' #break 
     }
 
-#Get rid of SGML tags as we are getting rid of all symbols. per Magerman Et al, there were only 7 SGML tags found in the OCT 2011 dataset
+#Get rid of SGML tags as we are getting rid of all symbols. per 
+#Magerman Et al, there were only 7 SGML tags found in the OCT 2011 dataset
 convert_sgml = {
     '': r'&AMP;|&OACUTE;|&SECT;|&UACUTE;|&#8902;|&BULL;|&EXCL;'
     }
@@ -215,9 +218,12 @@ clean_symbols = {
     '': r'[^\s\w\-\.,;]'
     }
 
-#treat -.,; as whitespaces ONLY if surrounded by alphanumeric chars or followed by a whitespace
+#treat -.,; as whitespaces ONLY if surrounded by alphanumeric chars
+#if followed by a whitespace but preceded by an alphanumeric character then replace
+#with nothing to leave the whitespace intact
 concatenators = {
-    ' ': r'(?<=[a-zA-Z\d])[\-\.,;](?=[a-zA-Z\d\w])'
+    ' ': r'(?<=[a-zA-Z\d])[\-\.,;](?=[a-zA-Z\d])',
+    '': r'(?<=[a-zA-Z\d])[\-\.,;](?=\s)'
     }
 
 #spaces must be single
@@ -225,8 +231,12 @@ single_space = {
     ' ':r'\s+' 
     }
 
-#translate all "ands" to other languages... for a more sophisticated version, we should use country codes because it can be dangerous to delete some of the shorter ones such as "I"...
-#using groups (?<=\s) as if we don't then consumes a space and then case: " AND AND " will not be matched in one try as the first match will consume the whitespace of the second one
+#translate all "ands" to other languages... for a more sophisticated version, 
+#we should use country codes because it can be dangerous to delete some of the
+#shorter ones such as "I"...
+#using groups (?<=\s) as if we don't then consumes a space and then case: 
+#" AND AND " will not be matched in one try as the first match will consume
+#the whitespace of the second one
 ampersand = {
     '&' : [r'(?<=\s)AND(?=\s)',
            r'(?<=\s)EN(?=\s)',
