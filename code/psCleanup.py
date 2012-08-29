@@ -221,9 +221,10 @@ clean_symbols = {
 #treat -.,; as whitespaces ONLY if surrounded by alphanumeric chars
 #if followed by a whitespace but preceded by an alphanumeric character then replace
 #with nothing to leave the whitespace intact
+#Need to add the punctuation at beginning and end of the line...
 concatenators = {
     ' ': r'(?<=[a-zA-Z\d])[\-\.,;](?=[a-zA-Z\d])',
-    '': r'(?<=[a-zA-Z\d])[\-\.,;](?=\s)'
+    '': r'(?<=[a-zA-Z\d])[\-\.,;](?=\s)|^[\-\.,;]|[\-\.,;]$'
     }
 
 #spaces must be single
