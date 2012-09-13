@@ -70,6 +70,9 @@ db = MySQLdb.connect(host="localhost", port=3306, user="mimitam", passwd="tam_pa
 cursor = db.cursor()
 cursor.execute('select count(appln_id) from tls201_appln')
 num_appln = cursor.fetchall()[0]
+cursor.close()
+db.close()
+
 main_count = 0
 #set the limit for each iteration
 limit = 10000000
