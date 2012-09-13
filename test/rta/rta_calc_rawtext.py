@@ -81,7 +81,7 @@ limit = 10000000
 #use a set to track how many applns have already had the count done
 set_applns = set()
 
-while main_count < num_appln:
+while main_count < num_appln[0]:
     fieldnames = ['person_id',
                   'appln_id',
                   'applt_seq_nr',
@@ -149,6 +149,9 @@ while main_count < num_appln:
     del persid_ctry
     
     #only need the keys now then delete; use set operations
+    set_applns_temp = set(applnid_persid.keys())
+    
+    #update applications already counted
     set_applns.add(set(applnid_persid.keys()))
     del applnid_persid
     
@@ -172,12 +175,12 @@ while main_count < num_appln:
         reader = csv.DictReader(g,fieldnames=fieldnames)
         for row in reader:
             this_ipc = single_space.sub(' ',rem_trail_spaces(row['ipc_class_symbol']))
-            if row['appln_id'] in set_applns:
+            if row['appln_id'] in set_applns_temp:
                 for applnctry,c in applnctry_count.iteritems():
                     #Country codes are only 2 letters long
                     appln = applnctry[:-2]
                     ctry = applnctry[-2:]
-                    applnctry_ipc[row[appln + this_ipc + ctry] += c
+                    applnctry_ipc[row[appln] + this_ipc + ctry] += c
 
     applnctryipc_count = defaultdict(int)
     #Can do the division directly
@@ -189,7 +192,7 @@ while main_count < num_appln:
 
     #increment the counter
     main_count = main_count + limit
-    #write to file before starting loop over
+    #write to file before starting loop over ('a' option means to append)
     h = open('applnipcctry_count.csv','ab')
     writer = csv.writer(f)
     values = [v for k,v in applnctryipc_count.iteritems()]
