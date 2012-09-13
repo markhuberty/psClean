@@ -60,7 +60,7 @@ values = [v for k,v in applnid_perscount.iteritems()]
 #back to int
 writer.writerows(itertools.izip(*[applnid_perscount.keys(),values]))
 f.close()
-del applnid_perscount
+#del applnid_perscount
 
 ###2.
 #Since it will be a join of 3 tables, we need to do multiple steps for the numerator
@@ -171,16 +171,24 @@ while main_count < num_appln:
                     ctry = applnctry[-2:]
                     applnctry_ipc[row[appln + this_ipc + ctry] += c
 
+    applnctryipc_count = defaultdict(int)
+    #Can do the division directly
+    for applnctryipc,v in applnctry_ipc.iteritems():
+        #Should double check this! Applications appear to be 9 digits
+        appln = applnctry[:8]
+        applnctryipc_count[applnctryipc] = v/applnid_perscount[appln]
+                
+
     #increment the counter
     main_count = main_count + limit
     #write to file before starting loop over
     h = open('applnipcctry_count.csv','ab')
     writer = csv.writer(f)
-    values = [v for k,v in applnid_perscount.iteritems()]
+    values = [v for k,v in applnctryipc_count.iteritems()]
     #Not the ideal way to write files but with dictwriter I had some trouble
     #So I am writing these as columns and will need to turn the values froms tring
     #back to int
-    writer.writerows(itertools.izip(*[applnctry_ipc.keys(),values]))
+    writer.writerows(itertools.izip(*[applnctryipc_count.keys(),values]))
     h.close()
     del applnctry_ipc
     del applnctry_count
