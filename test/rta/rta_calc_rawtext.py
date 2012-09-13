@@ -78,6 +78,8 @@ main_count = 0
 limit = 10000000
 ##2a. Get person_ids and the country codes associated with them
 
+#use a set to track how many applns have already had the count done
+set_applns = set()
 
 while main_count < num_appln:
     fieldnames = ['person_id',
@@ -102,14 +104,17 @@ while main_count < num_appln:
         reader = csv.DictReader(g,fieldnames=fieldnames)
         key_counter = 0
         for row in reader:
-            #check if max number of keys exceeded
-            if key_counter < limit: 
+            #check if max number of keys exceeded and whether the appln was counted
+            #in a previous iteration
+            if key_counter < limit & row['appln_id'] not in set_applns: 
                 applnid_persid[row['appln_id']].append(row['person_id'])
-                set_persids.add(row['person_id'])   
+                set_persids.add(row['person_id'])
+                key_counter+=1  
             else:
                 if row['appln_id'] in applnid_persid.keys():
                     applnid_persid[row['appln_id']].append(row['person_id'])
                     set_persids.add(row['person_id'])
+                    key_counter+=1
         g.close()   
     
     #now get the country codes attached to relevant personids to this search
@@ -144,7 +149,7 @@ while main_count < num_appln:
     del persid_ctry
     
     #only need the keys now then delete; use set operations
-    set_applns = set(applnid_persid.keys())
+    set_applns.add(set(applnid_persid.keys()))
     del applnid_persid
     
     #Now need to get the IPC codes for each applnid
