@@ -52,7 +52,7 @@ for f in file_names:
     for row in reader:
         this_id = int(row['person_id'])
         if this_id in int_ids:
-            company_names.append(row['person_name'])
+            company_names.append(row['PERSON_NAME'])
         else:
             continue
     conn.close()
@@ -75,7 +75,7 @@ for f in files:
     reader = csv.DictReader(f)
     for row in reader:
         if row['person_id'] not in int_ids:
-            name = row['person_name']
+            name = row['PERSON_NAME']
             name_ngrams = get_non_overlapping_ngrams(name, ngram_length=ngram_length)
             name_hashes = get_combinatorial_pairs(name_ngrams)
             
