@@ -44,23 +44,27 @@ def tuple_clean(query_output):
     for record in query_output:
 
         addresses_n += len(record[2])> 0
-        coauths.append(len(record[3].split('**')))
-        ipc.append(len(record[4].split('**')))
-                              
+
+        coauths_split = record[3].split('**')
+        ipc_split = record[4].split('**')
+
+        coauths.append(len(coauths_split))
+        ipc.append(len(ipc_split))
+
         record = list(record)
         record[0] = str(record[0])
         record[1] = str(record[1])
-        record[3] = psCleanup.cleanup((record[3].split('**')))
-        record[4] = psCleanup.ipc_clean(record[4].split('**'))
+        record[3] = psCleanup.cleanup((coauths_split))
+        record[4] = psCleanup.ipc_clean(ipc_split)
 
         name = psCleanup.get_legal_ids(record[3].pop(0))
         record[3:5] = [psCleanup.get_max(comparison) for comparison in record[3:5]]
 
-        with open(country+'_out', 'a') as tabfile:
+        with open(country + '_out', 'a') as tabfile:
             cleanwriter = csv.writer(tabfile, delimiter ='\t')
             cleanwriter.writerow([record[0], record[1], name[0], name[1], record[2], record[3], record[4]])    
 
-    coauth_mean = numpy.mean(coauths)
+    coauth_mean = numpy.mean(coauths) 
     ipc_mean = numpy.mean(ipc)
 
     with open('summary_stats', 'a') as csvfile:
@@ -80,7 +84,6 @@ countries = ['A ', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AI', 'AJ', 'AL', 'AM', \
 for country in countries:
 
     dataextract = """
-        EXPLAIN
         SELECT
             tls207_pers_appln.appln_id, tls207_pers_appln.person_id, tls206_person.person_address,
             GROUP_CONCAT(DISTINCT tls206_person.person_name SEPARATOR '**'),GROUP_CONCAT(DISTINCT tls209_appln_ipc.ipc_class_symbol SEPARATOR\
@@ -88,14 +91,23 @@ for country in countries:
         FROM
             tls201_appln, tls206_person,
             tls207_pers_appln JOIN tls209_appln_ipc ON tls207_pers_appln.appln_id = tls209_appln_ipc.appln_id
-        WHERE tls207_pers_appln.person_id = tls206_person.person_id AND tls206_person.person_ctry_code = """+country+"""
+        WHERE tls207_pers_appln.person_id = tls206_person.person_id AND tls206_person.person_ctry_code = """ + country + """
               AND tls207_pers_appln.appln_id = tls201_appln.appln_id AND YEAR(tls201_appln.appln_filing_date) > 1990
         GROUP BY tls207_pers_appln.appln_id ORDER BY NULL
         """
     
     date = time.strftime('%c', time.localtime()) 
-    print 'Processing '+country+'.    Started: '+time.strftime('%c', time.localtime())
+    print 'Processing ' + country + '.    Started: '+ time.strftime('%c', time.localtime())
+
+    total_elapsed_time = 0
+    time_start = time.time()
     
     query_output = myquery(dataextract)
-    final_output = tuple_clean(testquery)
+    final_output = tuple_clean(query_output)
 
+    time_end = time.time()
+    elapsed_time = time_end - time_start
+    total_elapsed_time += elapsed_time
+    
+    print 'Time elapsed for ' + country + ': ' + str(numpy.round(elapsed_time, 0))
+    print 'Overall elapsed time: ' + str(numpy.round(elapsed_time, 0))
