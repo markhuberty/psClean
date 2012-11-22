@@ -1,5 +1,37 @@
-# 21 November 2012
-# Prepare the query output for disambiguation
+############################
+## Author: Mark Huberty, Mimi Tam, and Georg Zachmann
+## Date Begun: 13 November 2012
+## Purpose: Module to clean inventor / assignee data in the PATSTAT patent
+##          database
+## License: BSD Simplified
+## Copyright (c) 2012, Authors
+## All rights reserved.
+##
+## Redistribution and use in source and binary forms, with or without
+## modification, are permitted provided that the following conditions are met: 
+## 
+## 1. Redistributions of source code must retain the above copyright notice, this
+##    list of conditions and the following disclaimer. 
+## 2. Redistributions in binary form must reproduce the above copyright notice,
+##    this list of conditions and the following disclaimer in the documentation
+##    and/or other materials provided with the distribution. 
+## 
+## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+## ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+## WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+## DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+## ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+## (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+## LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+## ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+## (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+## SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+## 
+## The views and conclusions contained in the software and documentation are those
+## of the authors and should not be interpreted as representing official policies, 
+## either expressed or implied, of the FreeBSD Project.
+############################
+
 
 import os
 import csv
@@ -30,10 +62,10 @@ def tuple_clean(query_output):
         and ipc codes per country.
     
     Args:
-        Tuple of unformated person_appln tuples
+        query_output: tuple of unformated person_appln tuples
     Returns:
-        Cleaned and formated tab delimited string of person_appln ready for writing.
-        File of summary statistics written out by country.
+        Files of cleaned person_appln rows written out by country.
+        File of summary statistics written out one row per country.
     """
 
     addresses_n = 0
@@ -43,26 +75,28 @@ def tuple_clean(query_output):
 
     for record in query_output:
 
-        addresses_n += len(record[2])> 0
-
+        record = list(record)
         coauths_split = record[3].split('**')
         ipc_split = record[4].split('**')
 
+        coauthors = [name for name in coauths_split if name != record[2]]
+        
+        addresses_n += len(record[3])> 0
         coauths.append(len(coauths_split))
         ipc.append(len(ipc_split))
 
-        record = list(record)
+        
         record[0] = str(record[0])
         record[1] = str(record[1])
-        record[3] = psCleanup.cleanup((coauths_split))
-        record[4] = psCleanup.ipc_clean(ipc_split)
-
-        name = psCleanup.get_legal_ids(record[3].pop(0))
-        record[3:5] = [psCleanup.get_max(comparison) for comparison in record[3:5]]
+        name = psCleanup.get_legal_ids(record[2])
+        record[4] = psCleanup.cleanup((coauthors))
+        record[5] = psCleanup.ipc_clean(ipc_split)
+      
+        record[4:6] = [psCleanup.get_max(comparison) for comparison in record[3:5]]
 
         with open(country + '_out', 'a') as tabfile:
             cleanwriter = csv.writer(tabfile, delimiter ='\t')
-            cleanwriter.writerow([record[0], record[1], name[0], name[1], record[2], record[3], record[4]])    
+            cleanwriter.writerow([record[0], record[1], name[0], name[1], record[3], record[4], record[5]])    
 
     coauth_mean = numpy.mean(coauths) 
     ipc_mean = numpy.mean(ipc)
@@ -82,20 +116,21 @@ countries = ['A ', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AI', 'AJ', 'AL', 'AM', \
 
 
 for country in countries:
-
     dataextract = """
-        SELECT
-            tls207_pers_appln.appln_id, tls207_pers_appln.person_id, tls206_person.person_address,
-            GROUP_CONCAT(DISTINCT tls206_person.person_name SEPARATOR '**'),GROUP_CONCAT(DISTINCT tls209_appln_ipc.ipc_class_symbol SEPARATOR\
-         '**')
-        FROM
-            tls201_appln, tls206_person,
-            tls207_pers_appln JOIN tls209_appln_ipc ON tls207_pers_appln.appln_id = tls209_appln_ipc.appln_id
-        WHERE tls207_pers_appln.person_id = tls206_person.person_id AND tls206_person.person_ctry_code = """ + country + """
-              AND tls207_pers_appln.appln_id = tls201_appln.appln_id AND YEAR(tls201_appln.appln_filing_date) > 1990
-        GROUP BY tls207_pers_appln.appln_id ORDER BY NULL
-        """
-    
+    EXPLAIN
+    SELECT
+        tls207_pers_appln.appln_id, tls207_pers_appln.person_id, tls206_person.person_name, tls206_person.person_address,
+        GROUP_CONCAT(DISTINCT tls206_person.person_name SEPARATOR '**'),
+        GROUP_CONCAT(DISTINCT tls209_appln_ipc.ipc_class_symbol SEPARATOR '**')
+    FROM
+        tls201_appln, tls206_person,
+        tls207_pers_appln JOIN tls209_appln_ipc ON tls207_pers_appln.appln_id = tls209_appln_ipc.appln_id
+    WHERE tls207_pers_appln.person_id = tls206_person.person_id AND tls206_person.person_ctry_code = """+ country +"""
+          AND tls207_pers_appln.appln_id = tls201_appln.appln_id AND YEAR(tls201_appln.appln_filing_date) > 1990
+    GROUP BY tls207_pers_appln.appln_id ORDER BY NULL
+    """
+
+
     date = time.strftime('%c', time.localtime()) 
     print 'Processing ' + country + '.    Started: '+ time.strftime('%c', time.localtime())
 
