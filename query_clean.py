@@ -68,6 +68,7 @@ def tuple_clean(query_output):
         File of summary statistics written out one row per country.
     """
 
+    auth_patent_n = len(query_output)
     addresses_n = 0
     coauths = list()
     ipc = list()
@@ -76,8 +77,8 @@ def tuple_clean(query_output):
     for record in query_output:
 
         record = list(record)
-        coauths_split = record[3].split('**')
-        ipc_split = record[4].split('**')
+        coauths_split = record[4].split('**')
+        ipc_split = record[5].split('**')
 
         coauthors = [name for name in coauths_split if name != record[2]]
         
@@ -88,11 +89,12 @@ def tuple_clean(query_output):
         
         record[0] = str(record[0])
         record[1] = str(record[1])
-        name = psCleanup.get_legal_ids(record[2])
-        record[4] = psCleanup.cleanup((coauthors))
+        record[2] = psCleanup.name_clean([record[2]])
+        name = psCleanup.get_legal_ids(record[2][0])
+        record[4] = psCleanup.name_clean((coauthors))
         record[5] = psCleanup.ipc_clean(ipc_split)
       
-        record[4:6] = [psCleanup.get_max(comparison) for comparison in record[3:5]]
+        record[4:6] = [psCleanup.get_max(comparison) for comparison in record[4:6]]
 
         with open(country + '_out', 'a') as tabfile:
             cleanwriter = csv.writer(tabfile, delimiter ='\t')
@@ -103,21 +105,20 @@ def tuple_clean(query_output):
 
     with open('summary_stats', 'a') as csvfile:
         statswriter = csv.writer(csvfile)
-        statswriter.writerow([country, addresses_n, coauth_mean, ipc_mean])       
+        statswriter.writerow([country, auth_patent_n, addresses_n, coauth_mean, ipc_mean])       
 
     return None
 
     
 # Country codes in format that appears in PATSAT.
 
-countries = ['A ', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AI', 'AJ', 'AL', 'AM', \
+countries = [''AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AI', 'AJ', 'AL', 'AM', \
              'AN', 'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW', 'AX', 'AZ', \
                 '\xc3\x88']
 
 
 for country in countries:
     dataextract = """
-    EXPLAIN
     SELECT
         tls207_pers_appln.appln_id, tls207_pers_appln.person_id, tls206_person.person_name, tls206_person.person_address,
         GROUP_CONCAT(DISTINCT tls206_person.person_name SEPARATOR '**'),
@@ -125,7 +126,7 @@ for country in countries:
     FROM
         tls201_appln, tls206_person,
         tls207_pers_appln JOIN tls209_appln_ipc ON tls207_pers_appln.appln_id = tls209_appln_ipc.appln_id
-    WHERE tls207_pers_appln.person_id = tls206_person.person_id AND tls206_person.person_ctry_code = """+ country +"""
+    WHERE tls207_pers_appln.person_id = tls206_person.person_id AND tls206_person.person_ctry_code = '"""+country+"""'
           AND tls207_pers_appln.appln_id = tls201_appln.appln_id AND YEAR(tls201_appln.appln_filing_date) > 1990
     GROUP BY tls207_pers_appln.appln_id ORDER BY NULL
     """

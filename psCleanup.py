@@ -36,7 +36,7 @@
 import re
 import unicodedata
 import string
-
+import pickle
 
 
 def stdize_case(mystring): 
@@ -54,7 +54,7 @@ def remove_diacritics(inputstring):
     nkfd_form = unicodedata.normalize('NFKD', unicode(inputstring))
     only_ascii = u"".join([c for c in nkfd_form if not unicodedata.combining(c)])
     outputstring = only_ascii.encode('utf8')
-    return outpustring
+    return outputstring
 
 
 def mult_replace(input_string, regex_dict):
@@ -127,7 +127,7 @@ def ipc_clean(codes):
     return codes
 
 
-def name_clean(string_list):
+def name_clean(inputlist):
     """
     Cycles through cleanup functions to return cleaned names.
     Args:
@@ -209,7 +209,6 @@ def get_max(comparisons):
         max_comparisons = comparisons[0:9]
     else:
         max_comparisons = comparisons[0:n]
-
     comparison = '**'.join(max_comparisons)
     return comparison
 
@@ -238,6 +237,7 @@ def get_dicts():
 #Dictionaries used for cleaning and list of legal identifiers.
 #IMPORTANT NOTE: These all assume that case standardization has already been 
 #performed!
+
 
 convert_html = {
     ' ': r'<\s*BR\s*>' #break 
@@ -303,3 +303,4 @@ KY\\b|LTEE\\b|BPK\\b|IBC\\b|DA\\b|BVBA\\b|CVA\\b|KFT\\b|SAFI\\b|EOOD\\b|SA DE CV
 S EN NC\\b|AMBA\\b|SDN BHD\\b|AC\\b|AB\\b|AE\\b|AD\\b|AG\\b|IS\\b|ANS\\b|AL\\b|AS\\b|
 OOD\\b|VOS\\b|VEB\\b""")
 
+cleanup_dics = get_dicts()
