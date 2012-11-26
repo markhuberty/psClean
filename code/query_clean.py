@@ -46,6 +46,8 @@ import numpy
 db=MySQLdb.connect(host='localhost', port = 3306, user='mimitam',\
                         passwd='tam_patstat2011', db = 'patstatOct2011')
 
+outpathname = os.getcwd()[:-4]+'output/'
+
 def myquery(query):
     conn_cursor = db.cursor()
     conn_cursor.execute(query)
@@ -96,14 +98,16 @@ def tuple_clean(query_output):
       
         record[5:7] = [psCleanup.get_max(comparison) for comparison in record[5:7]]
 
-        with open(year + '_out', 'a') as tabfile:
+        filename = outpathname + record[4]+'_out'
+        
+        with open(filename, 'a') as tabfile:
             cleanwriter = csv.writer(tabfile, delimiter ='\t')
-            cleanwriter.writerow([record[4], record[0], record[1], name[0], name[1], record[3], record[5], record[6]])    
+            cleanwriter.writerow([record[4], record[0], record[1], name[0], name[1], record[3], record[5], record[6], year])    
 
     coauth_mean = numpy.mean(coauths) 
     ipc_mean = numpy.mean(ipc)
 
-    with open('summary_stats', 'a') as csvfile:
+    with open(outpathname+'summary_stats', 'a') as csvfile:
         statswriter = csv.writer(csvfile)
         statswriter.writerow([year, auth_patent_n, addresses_n, coauth_mean, ipc_mean])       
 
@@ -112,9 +116,9 @@ def tuple_clean(query_output):
     
 # Years to group patent data by.
 
-years = ['1990']#, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
-             #2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
-             #2010, 2011]
+years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999',
+         '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009',
+         '2010', '2011']
 
 total_elapsed_time = 0
 
@@ -131,6 +135,7 @@ for year in years:
     WHERE tls201_appln.appln_id = tls207_pers_appln.appln_id
           AND YEAR(tls201_appln.appln_filing_date) = """+ year +"""
     GROUP BY tls207_pers_appln.appln_id ORDER BY NULL
+    LIMIT 10
     """
 
 
