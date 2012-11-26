@@ -127,7 +127,7 @@ def ipc_clean(codes):
     return codes
 
 
-def name_clean(inputlist):
+def name_clean(input_string_list):
     """
     Cycles through cleanup functions to return cleaned names.
     Args:
@@ -135,17 +135,17 @@ def name_clean(inputlist):
     Returns:
         outputlist: cleaned input string.
     """
-    for i, mystring in enumerate(inputlist):
-        a = decoder(mystring)
-        b = remove_diacritics(a)
-        c = stdize_case(b)
-        inputlist[i] = c
-    clean_strings = master_clean_dicts(inputlist, cleanup_dics)
-    outputlist = [encoder(v) for v in clean_strings]
-    return outputlist
+    output_string_list = []
+    for name in input_string_list:
+        std_string = decoder(name)
+        std_string = remove_diacritics(std_string)
+        std_string = stdize_case(std_string)
+        clean_string = master_clean_dicts([std_string], cleanup_dicts)[0]
+        output_string_list.append(clean_string)
+    return output_string_list
 
 
-def get_legal_ids(inputstring):
+def get_legal_ids(inputstring, legal_regex):
     """
     Small function to separate common legal identifiers from names.
     Args:
@@ -153,11 +153,10 @@ def get_legal_ids(inputstring):
     Returns:
         (name, ids): tuple of name and string of legal ids joined by '**' 
     """
-    v = re.compile(legal_identifiers)   
-    ids_list = v.findall(inputstring)
+    ids_list = legal_regex.findall(inputstring)
     ids = '**'.join(ids_list)
-    name = v.sub('', inputstring)
-    return (name, ids)
+    name = legal_regex.sub('', inputstring)
+    return name, ids
 
 
 def encoder(v):
@@ -294,3 +293,4 @@ ampersand = {
 legal_identifiers = """\\bBT\\b|\\bGMBH\\b|\\bPMDN\\b|\\bOYJ\\b|\\bEPE\\b|\\bRT\\b|\\bSGPS\\b|\\bPRC\\b|\\bOHG\\b|\\bRAS\\b|\\bSAS\\b|\\b\nSPA\\b|\\bKB\\b|\\bGIE\\b|\\bTD\\b|\\bPRP LTD\\b|\\bSNC\\b|\\bDBA\\b|\\bAPS\\b|\\bOE\\b|\\bA EN P\\b|\\bEXT\\b|\\b\nKAS\\b|\\bSCS\\b|\\bOY\\b|\\bSENC\\b|\\bAPB\\b|\\bOU\\b|\\bS DE RL\\b|\\bGBR\\b|\\bKOM SRK\\b|\\bHB\\b|\\bEEG\\b|\\b\nHF\\b|\\bLDC\\b|\\bSK\\b|\\bLDA\\b|\\bPT\\b|\\bLLP\\b|\\bSCA\\b|\\bEE\\b|\\bPTY\\b|\\bLLC\\b|\\bLTDA\\b|\\bSCP\\b|\\b\nPL\\b|\\bSOPARFI\\b|\\bEIRL\\b|\\bGCV\\b|\\bJTD\\b|\\bEV\\b|\\bCA\\b|\\bSA\\b|\\bVOF\\b|\\bSAICA\\b|\\bKKT\\b|\\b\nAVV\\b|\\bSAPA\\b|\\bSPRL\\b|\\bSPOL SRO\\b|\\bNA\\b|\\bINC\\b|\\bGESMBH\\b|\\bDOO\\b|\\bACE\\b|\\bKOL SRK\\b|\\b\nS EN C\\b|\\bKGAA\\b|\\bKDD\\b|\\bGMBH  CO KG\\b|\\bKDA\\b|\\bAPS  CO KS\\b|\\bASA\\b|\\bPMA\\b|\\bNT\\b|\\b\nDD\\b|\\bNV\\b|\\bTLS\\b|\\bSP ZOO\\b|\\bDNO\\b|\\bSRL\\b|\\bCORP\\b|\\bLTD\\b|\\bELP\\b|\\bEURL\\b|\\bCV\\b|\\b\nPC LTD\\b|\\bKG\\b|\\bSARL\\b|\\bKD\\b|\\bKK\\b|\\bSP\\b|\\bBV\\b|\\bKS\\b|\\bCVOA\\b|\\bPLC\\b|\\bKV\\b|\\bSC\\b|\\b\nKY\\b|\\bLTEE\\b|\\bBPK\\b|\\bIBC\\b|\\bDA\\b|\\bBVBA\\b|\\bCVA\\b|\\bKFT\\b|\\bSAFI\\b|\\bEOOD\\b|\\bSA DE CV\\b|\\b\nS EN NC\\b|\\bAMBA\\b|\\bSDN BHD\\b|\\bAC\\b|\\bAB\\b|\\bAE\\b|\\bAD\\b|\\bAG\\b|\\bIS\\b|\\bANS\\b|\\bAL\\b|\\bAS\\b|\\b\nOOD\\b|\\bVOS\\b|\\bVEB\\b"""
 
 cleanup_dics = get_dicts()
+legal_regex = re.compile(legal_identifiers)

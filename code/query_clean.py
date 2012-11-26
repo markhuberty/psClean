@@ -78,31 +78,52 @@ def tuple_clean(query_output):
 
     for record in query_output:
 
-        record = list(record)
+        ## Unpack the tuple
+        appln_id, person_id, person_name, person_address, person_ctry_code, \
+                  coauthors, ipc_codes = record
+        
+        ## Separate out the authors and ipcs for cleaning
         coauths_split = record[5].split('**')
         ipc_split = record[6].split('**')
 
-        coauthors = [name for name in coauths_split if name != record[2]]
-        
-        addresses_n += len(record[3])> 0
+        ## Drop the co-author that is this author
+        coauthors = [name for name in coauths_split if name != person_name]
+
+        ## Generate some summary statistics
+        addresses_n += len(person_address) > 0
         coauths.append(len(coauths_split))
         ipc.append(len(ipc_split))
 
         
-        record[0] = str(record[0])
-        record[1] = str(record[1])
-        record[2] = psCleanup.name_clean([record[2]])
-        name = psCleanup.get_legal_ids(record[2][0])
-        record[5] = psCleanup.name_clean((coauthors))
-        record[6] = psCleanup.ipc_clean(ipc_split)
-      
-        record[5:7] = [psCleanup.get_max(comparison) for comparison in record[5:7]]
+        appln_id = str(appln_id)
+        person_id = str(person_id)
+
+        ## Clean the person name, then break out the
+        ## legal identifiers
+        raw_name = psCleanup.name_clean([person_name])
+        clean_name, firm_legal_ids = psCleanup.get_legal_ids(raw_name)
+
+        clean_coauthors = psCleanup.name_clean(coauthors)
+        clean_ipcs = psCleanup.ipc_clean(ipc_split)
+
+        coauthors_final = psCleanup.get_max(coauthors_clean)
+        ipc_codes_final = psCleanup.get_max(ipc_codes)
+        legal_ids_final = psCleanup.get_max(firm_legal_ids)
 
         filename = outpathname + record[4]+'_out'
         
         with open(filename, 'a') as tabfile:
             cleanwriter = csv.writer(tabfile, delimiter ='\t')
-            cleanwriter.writerow([record[4], record[0], record[1], name[0], name[1], record[3], record[5], record[6], year])    
+            cleanwriter.writerow(appln_id,
+                                 person_id,
+                                 clean_name,
+                                 person_address,
+                                 legal_ids_final,
+                                 person_ctry_code,
+                                 coauthors_final,
+                                 ipc_codes_final,
+                                 year
+                                 )
 
     coauth_mean = numpy.mean(coauths) 
     ipc_mean = numpy.mean(ipc)
