@@ -135,7 +135,6 @@ for year in years:
     WHERE tls201_appln.appln_id = tls207_pers_appln.appln_id
           AND YEAR(tls201_appln.appln_filing_date) = """+ year +"""
     GROUP BY tls207_pers_appln.appln_id ORDER BY NULL
-    LIMIT 10
     """
 
 
