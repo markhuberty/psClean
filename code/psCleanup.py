@@ -230,5 +230,10 @@ def get_dicts():
     return all_dics
 
 ## Collect the dictionaries and complie the regex
-cleanup_dict_list = [ampersand, clean_symbols, convert_sgml, single_space, us_uk, abbreviations]
+name_address_dict_list = [ampersand, 
+                          convert_sgml, single_space, us_uk, abbreviations,
+                          clean_symbols, concatenators]
+coauth_dict_list = [ampersand, concatenators, convert_sgml, single_space,
+                    us_uk, abbreviations, leading_asterisks
+                    ]
 legal_regex = re.compile(legal_identifiers)

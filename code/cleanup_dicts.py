@@ -35,6 +35,7 @@ single_space = {
     ' ':r'\s+' 
     }
 
+leading_asterisks = {'':r'^[*]{,2}'}
 #translate all "ands" to other languages... for a more sophisticated version, 
 #we should use country codes because it can be dangerous to delete some of the
 #shorter ones such as "I"...
@@ -77,7 +78,7 @@ ampersand = {
 
 
 ## Legal identifiers
-legal_identifiers = """\\bBT\\b|\\bGMBH\\b|\\bPMDN\\b|\\bOYJ\\b|\\bEPE\\b|\\bRT\\b|\\bSGPS\\b|\\bPRC\\b|\\bOHG\\b|\\bRAS\\b|\\bSAS\\b|\\b\nSPA\\b|\\bKB\\b|\\bGIE\\b|\\bTD\\b|\\bPRP LTD\\b|\\bSNC\\b|\\bDBA\\b|\\bAPS\\b|\\bOE\\b|\\bA EN P\\b|\\bEXT\\b|\\b\nKAS\\b|\\bSCS\\b|\\bOY\\b|\\bSENC\\b|\\bAPB\\b|\\bOU\\b|\\bS DE RL\\b|\\bGBR\\b|\\bKOM SRK\\b|\\bHB\\b|\\bEEG\\b|\\b\nHF\\b|\\bLDC\\b|\\bSK\\b|\\bLDA\\b|\\bPT\\b|\\bLLP\\b|\\bSCA\\b|\\bEE\\b|\\bPTY\\b|\\bLLC\\b|\\bLTDA\\b|\\bSCP\\b|\\b\nPL\\b|\\bSOPARFI\\b|\\bEIRL\\b|\\bGCV\\b|\\bJTD\\b|\\bEV\\b|\\bCA\\b|\\bSA\\b|\\bVOF\\b|\\bSAICA\\b|\\bKKT\\b|\\b\nAVV\\b|\\bSAPA\\b|\\bSPRL\\b|\\bSPOL SRO\\b|\\bNA\\b|\\bINC\\b|\\bGESMBH\\b|\\bDOO\\b|\\bACE\\b|\\bKOL SRK\\b|\\b\nS EN C\\b|\\bKGAA\\b|\\bKDD\\b|\\bGMBH  CO KG\\b|\\bKDA\\b|\\bAPS  CO KS\\b|\\bASA\\b|\\bPMA\\b|\\bNT\\b|\\b\nDD\\b|\\bNV\\b|\\bTLS\\b|\\bSP ZOO\\b|\\bDNO\\b|\\bSRL\\b|\\bCORP\\b|\\bLTD\\b|\\bELP\\b|\\bEURL\\b|\\bCV\\b|\\b\nPC LTD\\b|\\bKG\\b|\\bSARL\\b|\\bKD\\b|\\bKK\\b|\\bSP\\b|\\bBV\\b|\\bKS\\b|\\bCVOA\\b|\\bPLC\\b|\\bKV\\b|\\bSC\\b|\\b\nKY\\b|\\bLTEE\\b|\\bBPK\\b|\\bIBC\\b|\\bDA\\b|\\bBVBA\\b|\\bCVA\\b|\\bKFT\\b|\\bSAFI\\b|\\bEOOD\\b|\\bSA DE CV\\b|\\b\nS EN NC\\b|\\bAMBA\\b|\\bSDN BHD\\b|\\bAC\\b|\\bAB\\b|\\bAE\\b|\\bAD\\b|\\bAG\\b|\\bIS\\b|\\bANS\\b|\\bAL\\b|\\bAS\\b|\\b\nOOD\\b|\\bVOS\\b|\\bVEB\\b"""
+legal_identifiers = """\\bBT\\b|\\bGMBH\\b|\\bPMDN\\b|\\bOYJ\\b|\\bEPE\\b|\\bRT\\b|\\bSGPS\\b|\\bPRC\\b|\\bOHG\\b|\\bRAS\\b|\\bSAS\\b|\\b\nSPA\\b|\\bKB\\b|\\bGIE\\b|\\bTD\\b|\\bPRP LTD\\b|\\bSNC\\b|\\bDBA\\b|\\bAPS\\b|\\bOE\\b|\\bA EN P\\b|\\bEXT\\b|\\b\nKAS\\b|\\bSCS\\b|\\bOY\\b|\\bSENC\\b|\\bAPB\\b|\\bOU\\b|\\bS DE RL\\b|\\bGBR\\b|\\bKOM SRK\\b|\\bHB\\b|\\bEEG\\b|\\b\nHF\\b|\\bLDC\\b|\\bSK\\b|\\bLDA\\b|\\bPT\\b|\\bLLP\\b|\\bSCA\\b|\\bEE\\b|\\bPTY\\b|\\bLLC\\b|\\bLTDA\\b|\\bSCP\\b|\\b\nPL\\b|\\bSOPARFI\\b|\\bEIRL\\b|\\bGCV\\b|\\bJTD\\b|\\bEV\\b|\\bCA\\b|\\bSA\\b|\\bVOF\\b|\\bSAICA\\b|\\bKKT\\b|\\b\nAVV\\b|\\bSAPA\\b|\\bSPRL\\b|\\bSPOL SRO\\b|\\bNA\\b|\\bINC\\b|\\bGESMBH\\b|\\bDOO\\b|\\bACE\\b|\\bKOL SRK\\b|\\b\nS EN C\\b|\\bKGAA\\b|\\bKDD\\b|\\bGMBH  CO KG\\b|\\bKDA\\b|\\bAPS  CO KS\\b|\\bASA\\b|\\bPMA\\b|\\bNT\\b|\\b\nDD\\b|\\bNV\\b|\\bTLS\\b|\\bSP ZOO\\b|\\bDNO\\b|\\bSRL\\b|\\bCORP\\b|\\bLTD\\b|\\bELP\\b|\\bEURL\\b|\\bCV\\b|\\b\nPC LTD\\b|\\bKG\\b|\\bSARL\\b|\\bKD\\b|\\bKK\\b|\\bSP\\b|\\bBV\\b|\\bKS\\b|\\bCVOA\\b|\\bPLC\\b|\\bKV\\b|\\bSC\\b|\\b\nKY\\b|\\bLTEE\\b|\\bBPK\\b|\\bIBC\\b|\\bDA\\b|\\bBVBA\\b|\\bCVA\\b|\\bKFT\\b|\\bSAFI\\b|\\bEOOD\\b|\\bSA DE CV\\b|\\b\nS EN NC\\b|\\bAMBA\\b|\\bSDN BHD\\b|\\bAC\\b|\\bAB\\b|\\bAE\\b|\\bAD\\b|\\bAG\\b|\\bIS\\b|\\bANS\\b|\\bAL\\b|\\bAS\\b|\\b\nOOD\\b|\\bVOS\\b|\\bVEB\\b|\\bCO\\b"""
 
 
 #Common US Spellings replaced with UK Spellings

@@ -39,21 +39,20 @@ import psCleanup
 import MySQLdb
 import time
 import numpy
-
+import pandas as pd
+import pandas.io.sql as psql
 
 # Set up MySQL connection
 
-db=MySQLdb.connect(host='localhost', port = 3306, user='mimitam',\
-                        passwd='tam_patstat2011', db = 'patstatOct2011')
+db=MySQLdb.connect(host='localhost', port = 3306, user='mimitam',
+                   passwd='tam_patstat2011', db = 'patstatOct2011'
+                   )
 
 outpathname = os.getcwd()[:-4]+'output/'
 
-def myquery(query):
-    conn_cursor = db.cursor()
-    conn_cursor.execute(query)
-    output = conn_cursor.fetchall()
-    conn_cursor.close()
-    
+def myquery(query, db_connection, colnames):
+    output = psql.frame_query(query, con=db_connection)
+    output.columns = colnames
     return output
 
 def tuple_clean(query_output):
@@ -75,23 +74,8 @@ def tuple_clean(query_output):
     coauths = list()
     ipc = list()
 
-    name_clean_time = time.time()
-    names = [q[2] for q in query_output]
-    names = psCleanup.name_clean(names, psCleanup.name_address_dict_list)
-    names_ids = [psCleanup.get_legal_ids(n, psCleanup.legal_regex) for n in names]
     
-    addresses = [q[3] for q in query_output]
-    addresses = psCleanup.name_clean(addresses, psCleanup.name_address_dict_list)
-
-    coauthors = [q[5] for q in query_output]
-    coauthors = psCleanup.name_clean(coauthors, psCleanup.coauth_dict_list)
-
-    name_clean_finish = time.time()
-
-    print 'Cleaning time per name + address'
-    print (name_clean_finish - name_clean_time) / float(len(names))
-
-
+    coauthors_split = []
     for idx, record in enumerate(query_output):
 
         clean_time_start = time.time()
@@ -174,39 +158,87 @@ years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998',
 total_elapsed_time = 0
 
 for year in years:
-    dataextract = """
+    name_extract = """
     SELECT
         tls207_pers_appln.appln_id, tls206_person.person_id,
-        tls206_person.person_name, tls206_person.person_address, tls206_person.person_ctry_code,
-        GROUP_CONCAT(DISTINCT tls206_person.person_name SEPARATOR '**'),
-        GROUP_CONCAT(DISTINCT tls209_appln_ipc.ipc_class_symbol SEPARATOR '**')
+        tls206_person.person_name, tls206_person.person_address, tls206_person.person_ctry_code
     FROM tls206_person INNER JOIN tls207_pers_appln ON tls206_person.person_id = tls207_pers_appln.person_id
         INNER JOIN tls201_appln ON tls201_appln.appln_id = tls207_pers_appln.appln_id
-        INNER JOIN tls209_appln_ipc ON tls209_appln_ipc.appln_id  = tls207_pers_appln.appln_id 
-    WHERE tls201_appln.appln_id = tls207_pers_appln.appln_id
-          AND YEAR(tls201_appln.appln_filing_date) = """+ year +"""
-    GROUP BY tls207_pers_appln.appln_id ORDER BY NULL LIMIT 10
+        WHERE YEAR(tls201_appln.appln_filing_date) = """+ year +"""
+    LIMIT 100000
     """
 
-
+    ipc_extract = """
+    SELECT
+        tls201_appln.appln_id, GROUP_CONCAT(tls209_appln_ipc.ipc_class_symbol SEPARATOR '**')
+    FROM tls201_appln INNER JOIN tls209_appln_ipc ON tls209_appln_ipc.appln_id = tls201_appln.appln_id 
+        WHERE YEAR(tls201_appln.appln_filing_date) = """+ year +"""
+    GROUP BY tls201_appln.appln_id
+    """
+    
     date = time.strftime('%c', time.localtime()) 
     print 'Processing ' + year + '.    Started: '+ time.strftime('%c', time.localtime())
-
-    time_start = time.time()
     
-    query_output = myquery(dataextract)
-    final_output = tuple_clean(query_output)
+    name_colnames = ['appln_id', 'person_id', 'person_name', 'person_address',
+                     'person_ctry_code'
+                     ]
+    ipc_colnames = ['appln_id', 'ipc_code']
 
-    time_end = time.time()
-    elapsed_time = time_end - time_start
-    total_elapsed_time += elapsed_time
+    start_time = time.time()
+    name_output = myquery(name_extract, db, name_colnames)
+    ipc_output = myquery(ipc_extract, db, ipc_colnames)
+    ipc_output = ipc_output.set_index('appln_id')
+
+    name_clean_time = time.time()
     
-    print 'Time elapsed for ' + year + ': ' + str(numpy.round(elapsed_time, 0))
-    print 'Overall elapsed time: ' + str(numpy.round(elapsed_time, 0))
+    ## Clean names, separate legal ids, and re-insert
+
+    
+    names = psCleanup.name_clean(name_output['person_name'], psCleanup.name_address_dict_list)
+    names_ids = [psCleanup.get_legal_ids(n, psCleanup.legal_regex) for n in names]
+    name_output['person_name'], name_output['firm_legal_id'] = zip(*names_ids)
+
+    name_output['person_address'] = psCleanup.name_clean(name_output['person_address'],
+                                                          psCleanup.name_address_dict_list
+                                                          )
+    ## ID the coauthors and join
+    coauthor_list = []
+    for appln_id, person_id in zip(name_output['appln_id'], name_output['person_id']):
+        coauthors = name_output['person_name'][(name_output['appln_id'] == appln_id) &
+                                                (name_output['person_id'] != person_id)
+                                               ]
+        coauthor_list.append(psCleanup.get_max(coauthors))
+    name_output['coauthors'] = coauthor_list
+
+    ipc_list = [ipc_output.xs(appln_id) if appln_id in ipc_output.index else ''
+                for appln_id in name_output['appln_id']
+                ]
+    ## Clean and join the IPC codes
+    ipc_split = []
+    for ipc in ipc_list:
+        if len(ipc) > 0:
+            ipc_split.append(ipc[0].split('**'))
+        else:
+            ipc_split.append('')
+
+    clean_ipc = [psCleanup.ipc_clean(ipc) for ipc in ipc_split]
+    name_output['ipc_codes'] = [psCleanup.get_max(ipc) for ipc in clean_ipc]
+
+    ## Write out files by country-year
+    name_clean_finish = time.time()
+    print 'Cleaning time per name + address + ipc code'
+    print (name_clean_finish - name_clean_time) / float(len(name_output))
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    n_records = str(len(name_output))
+    print 'Time elapsed for ' + year + ' and ' + n_records + ' records: ' + str(numpy.round(elapsed_time, 0))
+
+    grouped_country = name_output.groupby('person_ctry_code')
+
+    for country, group in grouped_country:
+        print country
+        output_filename = 'cleaned_output_' + country + '.csv'
+        group.to_csv(output_filename, mode='a', sep='\t')
 
 
-names = [q[2] for q in query_output]
-name_time_start = time.time()
-test = psCleanup.master_clean_dicts(names, psCleanup.cleanup_dicts)
-name_time_end = time.time()
-print name_time_end - name_time_start
