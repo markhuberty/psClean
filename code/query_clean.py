@@ -75,9 +75,16 @@ def tuple_clean(query_output):
     coauths = list()
     ipc = list()
 
+    name_clean_time = time.time()
+    names = [q[2] for q in query_output]
+    names = psCleanup.name_clean(names)
+    names_ids = [psCleanup.get_legal_ids(n, psCleanup.legal_regex) for n in names]
+    name_clean_finish = time.time()
+    print name_clean_finish - name_clean_time
+    
+    for idx, record in enumerate(query_output):
 
-    for record in query_output:
-
+        clean_time_start = time.time()
         ## Unpack the tuple
         appln_id, person_id, person_name, person_address, person_ctry_code, \
                   coauthors, ipc_codes = record
@@ -100,37 +107,47 @@ def tuple_clean(query_output):
 
         ## Clean the person name, then break out the
         ## legal identifiers
-        raw_name = psCleanup.name_clean([person_name])
-        clean_name, firm_legal_ids = psCleanup.get_legal_ids(raw_name)
-
-        clean_coauthors = psCleanup.name_clean(coauthors)
+        preclean_time = time.time()
+        print preclean_time - clean_time_start
+        # raw_name = psCleanup.name_clean([person_name])[0]
+        clean_name, firm_legal_ids = names_ids[idx]
+        intermediate_clean_time = time.time()
+        print intermediate_clean_time - clean_time_start
+        clean_coauthors = coauthors #psCleanup.name_clean(coauthors)
         clean_ipcs = psCleanup.ipc_clean(ipc_split)
 
-        coauthors_final = psCleanup.get_max(coauthors_clean)
-        ipc_codes_final = psCleanup.get_max(ipc_codes)
+        intermediate_clean_time_2 = time.time()
+        print intermediate_clean_time_2 - intermediate_clean_time
+        
+        coauthors_final = psCleanup.get_max(clean_coauthors)
+        ipc_codes_final = psCleanup.get_max(clean_ipcs)
         legal_ids_final = psCleanup.get_max(firm_legal_ids)
+        clean_time_end = time.time()
 
+        print 'Record clean time:'
+        print clean_time_end - clean_time_start
+        
         filename = outpathname + record[4]+'_out'
         
-        with open(filename, 'a') as tabfile:
-            cleanwriter = csv.writer(tabfile, delimiter ='\t')
-            cleanwriter.writerow(appln_id,
-                                 person_id,
-                                 clean_name,
-                                 person_address,
-                                 legal_ids_final,
-                                 person_ctry_code,
-                                 coauthors_final,
-                                 ipc_codes_final,
-                                 year
-                                 )
+    #     with open(filename, 'a') as tabfile:
+    #         cleanwriter = csv.writer(tabfile, delimiter ='\t')
+    #         cleanwriter.writerow(appln_id,
+    #                              person_id,
+    #                              clean_name,
+    #                              person_address,
+    #                              legal_ids_final,
+    #                              person_ctry_code,
+    #                              coauthors_final,
+    #                              ipc_codes_final,
+    #                              year
+    #                              )
 
-    coauth_mean = numpy.mean(coauths) 
-    ipc_mean = numpy.mean(ipc)
+    # coauth_mean = numpy.mean(coauths) 
+    # ipc_mean = numpy.mean(ipc)
 
-    with open(outpathname+'summary_stats', 'a') as csvfile:
-        statswriter = csv.writer(csvfile)
-        statswriter.writerow([year, auth_patent_n, addresses_n, coauth_mean, ipc_mean])       
+    # with open(outpathname+'summary_stats', 'a') as csvfile:
+    #     statswriter = csv.writer(csvfile)
+    #     statswriter.writerow([year, auth_patent_n, addresses_n, coauth_mean, ipc_mean])       
 
     return None
 
@@ -155,7 +172,7 @@ for year in years:
         INNER JOIN tls209_appln_ipc ON tls209_appln_ipc.appln_id  = tls207_pers_appln.appln_id 
     WHERE tls201_appln.appln_id = tls207_pers_appln.appln_id
           AND YEAR(tls201_appln.appln_filing_date) = """+ year +"""
-    GROUP BY tls207_pers_appln.appln_id ORDER BY NULL
+    GROUP BY tls207_pers_appln.appln_id ORDER BY NULL LIMIT 10
     """
 
 
@@ -173,3 +190,10 @@ for year in years:
     
     print 'Time elapsed for ' + year + ': ' + str(numpy.round(elapsed_time, 0))
     print 'Overall elapsed time: ' + str(numpy.round(elapsed_time, 0))
+
+
+names = [q[2] for q in query_output]
+name_time_start = time.time()
+test = psCleanup.master_clean_dicts(names, psCleanup.cleanup_dicts)
+name_time_end = time.time()
+print name_time_end - name_time_start
