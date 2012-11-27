@@ -164,9 +164,7 @@ for year in years:
         tls206_person.person_name, tls206_person.person_address, tls206_person.person_ctry_code
     FROM tls206_person INNER JOIN tls207_pers_appln ON tls206_person.person_id = tls207_pers_appln.person_id
         INNER JOIN tls201_appln ON tls201_appln.appln_id = tls207_pers_appln.appln_id
-        WHERE YEAR(tls201_appln.appln_filing_date) = """+ year +"""
-    LIMIT 100000
-    """
+        WHERE YEAR(tls201_appln.appln_filing_date) = """+ year 
 
     ipc_extract = """
     SELECT
