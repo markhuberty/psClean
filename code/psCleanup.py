@@ -37,7 +37,7 @@ import re
 import unicodedata
 import string
 import pickle
-
+from cleanup_dicts import *
 
 def stdize_case(mystring): 
     result = mystring.upper()
@@ -216,7 +216,7 @@ def get_dicts():
     Returns:
         List of dictionaries to be used in cleaning.
     """
-    dics_list = ['abbreviations', 'us_uk']
+    dicts_list = ['abbreviations', 'us_uk']
     all_dics = [ampersand, clean_symbols, convert_sgml, single_space]
 
     some_dics = {}
@@ -228,67 +228,6 @@ def get_dicts():
     all_dics.extend(some_dics.values())
     return all_dics
 
-
-#Dictionaries used for cleaning and list of legal identifiers.
-#IMPORTANT NOTE: These all assume that case standardization has already been 
-#performed!
-
-
-convert_html = {
-    ' ': r'<\s*BR\s*>' #break 
-    }
-
-convert_sgml = {
-    '': r'&AMP;|&OACUTE;|&SECT;|&UACUTE;|&#8902;|&BULL;|&EXCL;'
-    }
-
-clean_symbols = {
-    '': r'[^\s\w]'
-    }
-
-single_space = {
-    ' ':r'\s+' 
-    }
-
-#translate "ands" in common languages into the ampersand symbol. 
-ampersand = {
-    '&' : [r'(?<=\s)AND(?=\s)',
-           r'(?<=\s)EN(?=\s)',
-           r'(?<=\s)DHE(?=\s)',
-           r'(?<=\s)və(?=\s)',
-           r'(?<=\s)ETA(?=\s)',
-           r'(?<=\s)I(?=\s)',
-           r'(?<=\s)и(?=\s)',
-           r'(?<=\s)A(?=\s)',
-           r'(?<=\s)OG(?=\s)',
-           r'(?<=\s)KAJ(?=\s)',
-           r'(?<=\s)JA(?=\s)',
-           r'(?<=\s)AT(?=\s)',
-           r'(?<=\s)ET(?=\s)',
-           r'(?<=\s)E(?=\s)',
-           r'(?<=\s)UND(?=\s)',
-           r'(?<=\s)AK(?=\s)',
-           r'(?<=\s)ES(?=\s)',
-           r'(?<=\s)DAN(?=\s)',
-           r'(?<=\s)AGUS(?=\s)',
-           r'(?<=\s)UN(?=\s)',
-           r'(?<=\s)IR(?=\s)',
-           r'(?<=\s)U\s',
-           r'(?<=\s)SI(?=\s)',
-           r'(?<=\s)IN(?=\s)',
-           r'(?<=\s)Y(?=\s)',
-           r'(?<=\s)NA(?=\s)',
-           r'(?<=\s)OCH(?=\s)',
-           r'(?<=\s)VE(?=\s)',
-           r'(?<=\s)VA(?=\s)',
-           r'(?<=\s)SAMT(?=\s)'
-           ] 
-    }
-
-
-legal_identifiers = """\\bBT\\b|\\bGMBH\\b|\\bPMDN\\b|\\bOYJ\\b|\\bEPE\\b|\\bRT\\b|\\bSGPS\\b|\\bPRC\\b|\\bOHG\\b|\\bRAS\\b|\\bSAS\\b|\\b\nSPA\\b|\\bKB\\b|\\bGIE\\b|\\bTD\\b|\\bPRP LTD\\b|\\bSNC\\b|\\bDBA\\b|\\bAPS\\b|\\bOE\\b|\\bA EN P\\b|\\bEXT\\b|\\b\nKAS\\b|\\bSCS\\b|\\bOY\\b|\\bSENC\\b|\\bAPB\\b|\\bOU\\b|\\bS DE RL\\b|\\bGBR\\b|\\bKOM SRK\\b|\\bHB\\b|\\bEEG\\b|\\b\nHF\\b|\\bLDC\\b|\\bSK\\b|\\bLDA\\b|\\bPT\\b|\\bLLP\\b|\\bSCA\\b|\\bEE\\b|\\bPTY\\b|\\bLLC\\b|\\bLTDA\\b|\\bSCP\\b|\\b\nPL\\b|\\bSOPARFI\\b|\\bEIRL\\b|\\bGCV\\b|\\bJTD\\b|\\bEV\\b|\\bCA\\b|\\bSA\\b|\\bVOF\\b|\\bSAICA\\b|\\bKKT\\b|\\b\nAVV\\b|\\bSAPA\\b|\\bSPRL\\b|\\bSPOL SRO\\b|\\bNA\\b|\\bINC\\b|\\bGESMBH\\b|\\bDOO\\b|\\bACE\\b|\\bKOL SRK\\b|\\b\nS EN C\\b|\\bKGAA\\b|\\bKDD\\b|\\bGMBH  CO KG\\b|\\bKDA\\b|\\bAPS  CO KS\\b|\\bASA\\b|\\bPMA\\b|\\bNT\\b|\\b\nDD\\b|\\bNV\\b|\\bTLS\\b|\\bSP ZOO\\b|\\bDNO\\b|\\bSRL\\b|\\bCORP\\b|\\bLTD\\b|\\bELP\\b|\\bEURL\\b|\\bCV\\b|\\b\nPC LTD\\b|\\bKG\\b|\\bSARL\\b|\\bKD\\b|\\bKK\\b|\\bSP\\b|\\bBV\\b|\\bKS\\b|\\bCVOA\\b|\\bPLC\\b|\\bKV\\b|\\bSC\\b|\\b\nKY\\b|\\bLTEE\\b|\\bBPK\\b|\\bIBC\\b|\\bDA\\b|\\bBVBA\\b|\\bCVA\\b|\\bKFT\\b|\\bSAFI\\b|\\bEOOD\\b|\\bSA DE CV\\b|\\b\nS EN NC\\b|\\bAMBA\\b|\\bSDN BHD\\b|\\bAC\\b|\\bAB\\b|\\bAE\\b|\\bAD\\b|\\bAG\\b|\\bIS\\b|\\bANS\\b|\\bAL\\b|\\bAS\\b|\\b\nOOD\\b|\\bVOS\\b|\\bVEB\\b"""
-
-
-
-cleanup_dicts = get_dicts()
+## Collect the dictionaries and complie the regex
+cleanup_dict_list = [ampersand, clean_symbols, convert_sgml, single_space, us_uk, abbreviations]
 legal_regex = re.compile(legal_identifiers)

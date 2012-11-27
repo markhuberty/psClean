@@ -77,7 +77,7 @@ def tuple_clean(query_output):
 
     name_clean_time = time.time()
     names = [q[2] for q in query_output]
-    names = psCleanup.name_clean(names)
+    names = psCleanup.name_clean(names, psCleanup.cleanup_dict_list)
     names_ids = [psCleanup.get_legal_ids(n, psCleanup.legal_regex) for n in names]
     name_clean_finish = time.time()
     print name_clean_finish - name_clean_time
