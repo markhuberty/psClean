@@ -33,12 +33,12 @@
 ############################
 
 
-import os
-import csv
-import psCleanup
-import MySQLdb
-import time
-import numpy
+    import os
+    import csv
+    import psCleanup
+    import MySQLdb
+    import time
+    import numpy
 
 
 # Set up MySQL connection

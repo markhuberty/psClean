@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 #Dictionaries used for cleaning
 #IMPORTANT NOTE: These all assume that case standardization has already been 
 #performed!

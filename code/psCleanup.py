@@ -1,4 +1,5 @@
-# coding=utf8
+# -*- coding: utf-8 -*-
+
 ############################
 ## Author: Mark Huberty, Mimi Tam, and Georg Zachmann
 ## Date Begun: 23 May 2012
@@ -131,9 +132,9 @@ def name_clean(input_string_list, cleanup_dicts):
     """
     Cycles through cleanup functions to return cleaned names.
     Args:
-        inputlist: list of strings to be cleaned.
+        input_string_list: list of strings to be cleaned.
     Returns:
-        outputlist: cleaned input string.
+        output_string_list: cleaned input string.
     """
 
     std_strings = [decoder(name) for name in input_string_list]
@@ -203,7 +204,7 @@ def get_max(comparisons):
     """
 
     n = min(len(comparisons), 10)
-    comparison = '**'.join()comparisons[0:n])
+    comparison = '**'.join(comparisons[0:n])
 
     return comparison
 
