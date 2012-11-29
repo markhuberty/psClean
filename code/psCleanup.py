@@ -116,6 +116,24 @@ def master_clean_dicts(input_string_list, cleanup_dicts):
     return input_string_list   
 
 
+def master_clean_regex(input_string, regex_dicts):
+    """
+    Checks each string in an list and does a find/replace based on
+    values in a list of replace:find dicts
+    
+    Args:
+        input_string_list: string to be cleaned
+        cleanup_dicts: list of dicts to be used on the input string.
+        Dicts should be replace:find where find is either a string or
+        a list of strings
+    Returns:
+    A list of cleaned strings of same length as input_string_list
+    """
+    for regex in regex_dicts:
+        input_string = mult_replace(input_string, regex)
+    return input_string
+
+
 def ipc_clean(codes):
     """
     Small function to strip ipc field of spaces and punctuation.
@@ -127,6 +145,8 @@ def ipc_clean(codes):
     codes = [re.sub(r"\s|/", '', item) for item in codes]
     return codes
 
+def ipc_clean_atomic(code):
+    return re.sub(r"\s|/", '', code)
 
 def name_clean(input_string_list, cleanup_dicts):
     """
@@ -136,10 +156,13 @@ def name_clean(input_string_list, cleanup_dicts):
     Returns:
         output_string_list: cleaned input string.
     """
-
+    print 'decoding'
     std_strings = [decoder(name) for name in input_string_list]
+    print 'diacritics'
     std_strings = [remove_diacritics(s) for s in std_strings]
+    print 'case'
     std_strings = [stdize_case(s) for s in std_strings]
+    print 'clean'
     output_string_list = master_clean_dicts(std_strings, cleanup_dicts)
 
     return output_string_list
@@ -204,7 +227,8 @@ def get_max(comparisons):
     """
 
     n = min(len(comparisons), 10)
-    comparison = '**'.join(comparisons[0:n])
+    m = n - 1
+    comparison = '**'.join(comparisons[0:m])
 
     return comparison
 

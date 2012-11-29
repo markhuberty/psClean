@@ -18,7 +18,7 @@ convert_sgml = {
 
 #Remove all non alphanumeric
 clean_symbols = {
-    '': r'[^\s\w\-\.,;]'
+    '': r'[^\s\w\-\.,;\&]'
     }
 
 #treat -.,; as whitespaces ONLY if surrounded by alphanumeric chars
@@ -48,15 +48,15 @@ ampersand = {
            r'(?<=\s)DHE(?=\s)',
            r'(?<=\s)və(?=\s)',
            r'(?<=\s)ETA(?=\s)',
-           r'(?<=\s)I(?=\s)',
+           #r'(?<=\s)I(?=\s)',
            r'(?<=\s)и(?=\s)',
-           r'(?<=\s)A(?=\s)',
+          # r'(?<=\s)A(?=\s)',
            r'(?<=\s)OG(?=\s)',
            r'(?<=\s)KAJ(?=\s)',
            r'(?<=\s)JA(?=\s)',
            r'(?<=\s)AT(?=\s)',
            r'(?<=\s)ET(?=\s)',
-           r'(?<=\s)E(?=\s)',
+           #r'(?<=\s)E(?=\s)',
            r'(?<=\s)UND(?=\s)',
            r'(?<=\s)AK(?=\s)',
            r'(?<=\s)ES(?=\s)',
@@ -64,7 +64,7 @@ ampersand = {
            r'(?<=\s)AGUS(?=\s)',
            r'(?<=\s)UN(?=\s)',
            r'(?<=\s)IR(?=\s)',
-           r'(?<=\s)U\s',
+           #r'(?<=\s)U\s',
            r'(?<=\s)SI(?=\s)',
            r'(?<=\s)IN(?=\s)',
            r'(?<=\s)Y(?=\s)',

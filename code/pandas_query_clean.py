@@ -55,98 +55,98 @@ def myquery(query, db_connection, colnames):
     output.columns = colnames
     return output
 
-def tuple_clean(query_output):
-    """
-    Cleans, formats, outputs the query data.
-    Collects summary statistics per country: number of records,
-        number of nonblank address lines and average number of coauthors
-        and ipc codes per country.
+# def tuple_clean(query_output):
+#     """
+#     Cleans, formats, outputs the query data.
+#     Collects summary statistics per country: number of records,
+#         number of nonblank address lines and average number of coauthors
+#         and ipc codes per country.
     
-    Args:
-        query_output: tuple of unformated person_appln tuples
-    Returns:
-        Files of cleaned person_appln rows written out by country.
-        File of summary statistics written out one row per country.
-    """
+#     Args:
+#         query_output: tuple of unformated person_appln tuples
+#     Returns:
+#         Files of cleaned person_appln rows written out by country.
+#         File of summary statistics written out one row per country.
+#     """
 
-    auth_patent_n = len(query_output)
-    addresses_n = 0
-    coauths = list()
-    ipc = list()
+#     auth_patent_n = len(query_output)
+#     addresses_n = 0
+#     coauths = list()
+#     ipc = list()
 
     
-    coauthors_split = []
-    for idx, record in enumerate(query_output):
+#     coauthors_split = []
+#     for idx, record in enumerate(query_output):
 
-        clean_time_start = time.time()
-        ## Unpack the tuple
-        appln_id, person_id, person_name, person_address, person_ctry_code, \
-                  coauth, ipc_codes = record
+#         clean_time_start = time.time()
+#         ## Unpack the tuple
+#         appln_id, person_id, person_name, person_address, person_ctry_code, \
+#                   coauth, ipc_codes = record
         
-        ## Separate out the authors and ipcs for cleaning
-        coauthors_split = coauthors[idx].split('**')
-        ipc_split = ipc_codes.split('**')
+#         ## Separate out the authors and ipcs for cleaning
+#         coauthors_split = coauthors[idx].split('**')
+#         ipc_split = ipc_codes.split('**')
 
-        ## Drop the co-author that is this author
-        clean_coauthors = [name for name in coauthors_split if name != person_name]
+#         ## Drop the co-author that is this author
+#         clean_coauthors = [name for name in coauthors_split if name != person_name]
 
-        ## Generate some summary statistics
-        addresses_n += len(person_address) > 0
-        coauths.append(len(clean_coauthors))
-        ipc.append(len(ipc_split))
-
-        
-        appln_id = str(appln_id)
-        person_id = str(person_id)
-
-        ## Clean the person name, then break out the
-        ## legal identifiers
-        preclean_time = time.time()
-        ## print preclean_time - clean_time_start
-        # raw_name = psCleanup.name_clean([person_name])[0]
-        clean_name, firm_legal_ids = names_ids[idx]
-        # intermediate_clean_time = time.time()
-        # print intermediate_clean_time - clean_time_start
-        clean_ipcs = psCleanup.ipc_clean(ipc_split)
-
-        # intermediate_clean_time_2 = time.time()
-        # print intermediate_clean_time_2 - intermediate_clean_time
-        
-        coauthors_final = psCleanup.get_max(clean_coauthors)
-        ipc_codes_final = psCleanup.get_max(clean_ipcs)
-        legal_ids_final = psCleanup.get_max([firm_legal_ids])
-        clean_time_end = time.time()
-        
-        print appln_id, person_id, clean_name, legal_ids_final, addresses[idx], person_ctry_code, coauthors_final, ipc_codes_final
+#         ## Generate some summary statistics
+#         addresses_n += len(person_address) > 0
+#         coauths.append(len(clean_coauthors))
+#         ipc.append(len(ipc_split))
 
         
-        print 'Record clean time:'
-        print clean_time_end - clean_time_start
+#         appln_id = str(appln_id)
+#         person_id = str(person_id)
+
+#         ## Clean the person name, then break out the
+#         ## legal identifiers
+#         preclean_time = time.time()
+#         ## print preclean_time - clean_time_start
+#         # raw_name = psCleanup.name_clean([person_name])[0]
+#         clean_name, firm_legal_ids = names_ids[idx]
+#         # intermediate_clean_time = time.time()
+#         # print intermediate_clean_time - clean_time_start
+#         clean_ipcs = psCleanup.ipc_clean(ipc_split)
+
+#         # intermediate_clean_time_2 = time.time()
+#         # print intermediate_clean_time_2 - intermediate_clean_time
         
-    #     filename = outpathname + record[4]+'_out'
+#         coauthors_final = psCleanup.get_max(clean_coauthors)
+#         ipc_codes_final = psCleanup.get_max(clean_ipcs)
+#         legal_ids_final = psCleanup.get_max([firm_legal_ids])
+#         clean_time_end = time.time()
+        
+#         print appln_id, person_id, clean_name, legal_ids_final, addresses[idx], person_ctry_code, coauthors_final, ipc_codes_final
+
+        
+#         print 'Record clean time:'
+#         print clean_time_end - clean_time_start
+        
+#     #     filename = outpathname + record[4]+'_out'
         
     
-    #     with open(filename, 'a') as tabfile:
-    #         cleanwriter = csv.writer(tabfile, delimiter ='\t')
-    #         cleanwriter.writerow(appln_id,
-    #                              person_id,
-    #                              clean_name,
-    #                              addresses[idx],
-    #                              legal_ids_final,
-    #                              person_ctry_code,
-    #                              coauthors_final,
-    #                              ipc_codes_final,
-    #                              year
-    #                              )
+#     #     with open(filename, 'a') as tabfile:
+#     #         cleanwriter = csv.writer(tabfile, delimiter ='\t')
+#     #         cleanwriter.writerow(appln_id,
+#     #                              person_id,
+#     #                              clean_name,
+#     #                              addresses[idx],
+#     #                              legal_ids_final,
+#     #                              person_ctry_code,
+#     #                              coauthors_final,
+#     #                              ipc_codes_final,
+#     #                              year
+#     #                              )
 
-    # coauth_mean = numpy.mean(coauths) 
-    # ipc_mean = numpy.mean(ipc)
+#     # coauth_mean = numpy.mean(coauths) 
+#     # ipc_mean = numpy.mean(ipc)
 
-    # with open(outpathname+'summary_stats', 'a') as csvfile:
-    #     statswriter = csv.writer(csvfile)
-    #     statswriter.writerow([year, auth_patent_n, addresses_n, coauth_mean, ipc_mean])       
+#     # with open(outpathname+'summary_stats', 'a') as csvfile:
+#     #     statswriter = csv.writer(csvfile)
+#     #     statswriter.writerow([year, auth_patent_n, addresses_n, coauth_mean, ipc_mean])       
 
-    return None
+#     return None
 
     
 # Years to group patent data by.
@@ -187,6 +187,11 @@ for year in years:
     ipc_output = myquery(ipc_extract, db, ipc_colnames)
     ipc_output = ipc_output.set_index('appln_id')
 
+    print time.strftime('%c', time.localtime())
+    print 'Query complete, starting cleaning'
+    print 'Number of records returned:'
+    print len(name_output), len(ipc_output)
+
     name_clean_time = time.time()
     
     ## Clean names, separate legal ids, and re-insert
@@ -199,6 +204,9 @@ for year in years:
     name_output['person_address'] = psCleanup.name_clean(name_output['person_address'],
                                                           psCleanup.name_address_dict_list
                                                           )
+    print time.strftime('%c', time.localtime())
+    print 'Names clean'
+
     ## ID the coauthors and join
     coauthor_list = []
     for appln_id, person_id in zip(name_output['appln_id'], name_output['person_id']):
@@ -207,6 +215,10 @@ for year in years:
                                                ]
         coauthor_list.append(psCleanup.get_max(coauthors))
     name_output['coauthors'] = coauthor_list
+
+    print time.strftime('%c', time.localtime())
+    print 'Coauthors aggregated'
+
 
     ipc_list = [ipc_output.xs(appln_id) if appln_id in ipc_output.index else ''
                 for appln_id in name_output['appln_id']
