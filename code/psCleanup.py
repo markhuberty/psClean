@@ -40,6 +40,7 @@ import string
 import pickle
 from cleanup_dicts import *
 
+
 def stdize_case(mystring): 
     result = mystring.upper()
     return result
@@ -129,9 +130,10 @@ def master_clean_regex(input_string, regex_dicts):
     Returns:
     A list of cleaned strings of same length as input_string_list
     """
+    output_string = input_string
     for regex in regex_dicts:
-        input_string = mult_replace(input_string, regex)
-    return input_string
+        output_string = mult_replace(output_string, regex)
+    return output_string
 
 
 def ipc_clean(codes):
@@ -146,7 +148,8 @@ def ipc_clean(codes):
     return codes
 
 def ipc_clean_atomic(code):
-    return re.sub(r"\s|/", '', code)
+    clean_code = re.sub(r"\s|/", '', code)
+    return clean_code
 
 def name_clean(input_string_list, cleanup_dicts):
     """
@@ -196,6 +199,7 @@ def encoder(v):
             writer.writerow(tuple(encoder(v) for i,v in enumerate(row)))
     """
     if isinstance(v,unicode):
+        output = v.encode('utf-8')
         return v.encode('utf-8')
     else:
         return v
@@ -215,7 +219,8 @@ def decoder(v,encoding='latin1'):
     if isinstance(v,basestring):
         if not isinstance(v,unicode):
             return unicode(v,encoding)
-
+        else:
+            return v
         
 def get_max(comparisons):
     """
