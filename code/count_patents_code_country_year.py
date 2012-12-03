@@ -5,6 +5,7 @@ import sys
 import subprocess
 import re
 import itertools as it
+import gc
 
 sys.path.append('//markhuberty/Documents/Research/Papers/psClean/code')
 import psCleanup
@@ -75,12 +76,14 @@ cat_regex = psCleanup.make_regex(green_energy_cats)
 
 for idx, f in enumerate(country_files):
     filename = './data/' + f
+
+    print 'Operating on ' + filename
     
     conn = open(filename, 'rt')
     reader = csv.reader(conn, delimiter='\t')
     data = [row for row in reader]
     conn.close()
-
+    
     # Clean up the data; there's some extra columns in there
     # at one point b/c of index weirdness
 
@@ -100,32 +103,53 @@ for idx, f in enumerate(country_files):
     for row in cleaned_data:
         writer.writerow(row)
     conn.close()
+    del cleaned_data
+    del data
+    gc.collect()
 
-    df = pd.read_csv('./data/cleaned_output_NL.tsv')
+    print 'File cleaned, now counting patents'
+    df = pd.read_csv(filename)
 
-
+    
     # Get country-level patents (not country-individual patents)
     cols = ['appln_id', 'person_ctry_code', 'ipc_code', 'year']
     df_country_ipcs = df[cols].drop_duplicates()
 
+    del df
+    gc.collect()
+
+    country = filename[-6:-4] ## Check this
+    
     ## Count
     green_cat_count = count_green_patents(df_country_ipcs['ipc_code'],
                                           df_country_ipcs['year'],
                                           cat_regex,
-                                          'NL'
+                                          country
                                           )
     green_cat_count = green_cat_count.reset_index()
 
-    # Accumulate the country-year-count dataframe
-    if idx == 1:
-        all_counts = green_cat_count
-    else:
-        all_counts = pd.concat(all_counts, green_cat_counts,
-                               ignore_index=True
-                               )
+    df_country_ipcs['identity'] = 1
 
-all_counts.tocsv('./data/country_green_patent_counts_byyear.csv')
-        
+    patents_grouped = df_country_ipcs.groupby('year')
+    total_patents = patents_grouped['identity'].agg(sum)
+    total_patents['country'] = country
+
+    # Accumulate the country-year-count dataframe
+    if idx == 0:
+        all_green_counts = green_cat_count
+        all_total_counts = total_patents
+    else:
+        all_green_counts = pd.concat(all_green_counts, green_cat_counts,
+                                     ignore_index=True
+                                     )
+        all_total_counts = pd.concat(all_total_counts, total_patents,
+                                     ignore_index=True
+                                     )
+    
+
+    
+all_green_counts.to_csv('./data/country_green_patent_counts_byyear.csv')
+all_total_counts.to_csv('./data/country_total_patent_counts_byyear.csv')
 
     
         
