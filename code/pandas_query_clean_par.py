@@ -184,9 +184,17 @@ for year in years:
      print (time.time() - coauth_time)
 
      coauth_clean_time = time.time()
-     name_output['coauthors'] = [re.sub('\*+' + n + '\*+', '', c)
-                                 for n,c in it.izip(name_output['person_name'], name_output['coauthors'])
-                                 ]
+     coauth_clean = []
+     for n,c in it.izip(name_output['person_name'], name_output['coauthors']):
+          
+          coauthors = c.split('**')
+          coauthors_clean = [ca for ca in coauthors
+                             if ca != n
+                             ]
+          coauthors = '**'.join(coauthors_clean)
+          coauth_clean.append(coauthors)
+     name_output['coauthors'] = coauthors_clean
+     
      print(time.time() - coauth_clean_time)
 
      # Then here just join the coauthors to the original db
