@@ -82,71 +82,30 @@ country_files = [f for f in country_files if 'tsv' in f]
 ## Drop the -no country- file, very very large (32m rows)
 country_files = [f for f in country_files if ' ' not in f]
 
-
 for idx, f in enumerate(country_files):
-   
-    filename = './data/cleaned_data/' + f
-    print 'Counting patents in ' + filename
+    input_filename = './data/' + f
+    output_filename = './data/cleaned_data/' + f
 
+    print 'Operating on ' + input_filename
     
-    df = pd.read_csv(filename)
-    print df.shape
+    reader_conn = open(input_filename, 'rt')
+    writer_conn = open(output_filename, 'wt')
+    reader = csv.reader(reader_conn, delimiter='\t')
+    writer = csv.writer(writer_conn)
 
-    df.columns = ['appln_id',
-                  'person_id',
-                  'person_name',
-                  'person_address',
-                  'person_ctry_code',
-                  'firm_legal_id',
-                  'coauthors',
-                  'ipc_code',
-                  'year'
-                  ]
-    start_time = time.time()
-    
-    # Get country-level patents (not country-individual patents)
-    cols = ['appln_id', 'person_ctry_code', 'ipc_code', 'year']
-    df_country_ipcs = df[cols].drop_duplicates()
+    for row in reader:
 
-    del df
-    gc.collect()
-
-    country = filename[-6:-4] ## Check this
-    
-    ## Count
-    green_cat_count = count_green_patents(df_country_ipcs['ipc_code'],
-                                          df_country_ipcs['year'],
-                                          cat_regex,
-                                          country
-                                          )
-    green_cat_count = green_cat_count.reset_index()
-
-    df_country_ipcs['identity'] = 1
-
-    patents_grouped = df_country_ipcs.groupby('year')
-    total_patents = patents_grouped['identity'].agg(sum)
-    total_patents_df = pd.DataFrame({'country':country, 'patent_count':total_patents})
-    total_patents_df = total_patents_df.reset_index()
-
-    # Accumulate the country-year-count dataframe
-    if idx == 0:
-        all_green_counts = green_cat_count
-        all_total_counts = total_patents_df
-    else:
-        all_green_counts = all_green_counts.append(green_cat_count, ignore_index=True)
-        all_total_counts = all_total_counts.append(total_patents_df, ignore_index=True)
-    end_time = time.time()
-    record_count = len(df_country_ipcs)
-
-    if record_count > 0:
-        time_per_record = (end_time - start_time) / record_count
-        print 'Cleaning time per record: ' + str(time_per_record)
-    del df_country_ipcs
-    del total_patents
-    del green_cat_count
-    
-all_green_counts.to_csv('./data/country_green_patent_counts_byyear.csv')
-all_total_counts.to_csv('./data/country_total_patent_counts_byyear.csv')
+        if len(row) not in [10,11]:
+            print len(row)
+        
+        if len(row) == 10:
+            del row[0]
+        else:
+            del row[0]
+            del row[0]
+        writer.writerow(row)
+    reader_conn.close()
+    writer_conn.close()
 
     
         
