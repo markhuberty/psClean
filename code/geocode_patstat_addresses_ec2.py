@@ -1,11 +1,15 @@
-import pandas
+import pandas as pd
 import urllib2
 import json
 import boto ## for ec2 handling
 import time
-from pprint import pprint
+import numpy as np
+import itertools as it
+import os
 
-def geocode_address(address, root_url):
+os.chdir('/home/markhuberty/Documents/psClean/')
+
+def geocode_address(address, country_name, root_url):
     param = '+'.join(address.split(' '))
     this_url = root_url + param
     print this_url
@@ -17,15 +21,28 @@ def geocode_address(address, root_url):
 
     if response:
         address = json.load(response)
-
-        if address['status'] != 'ZERO_RESULTS':
+        if address['status'] == 'ZERO_RESULTS':
+            this_url = this_url + '+' + country_name
+            try:
+                response = urllib2.urlopen(this_url)
+            except urllib2.HTTPError:
+                response = None
+            if response:
+                address = json.load(response)
+                if address['status'] != 'ZERO_RESULTS':
+                    lat = address['results'][0]['geometry']['location']['lat']
+                    lng = address['results'][0]['geometry']['location']['lng']
+                else:
+                    lat, lng = None, None
+            else:
+                lat, lng = None, None
+            return (lat, lng)
+        else:
             lat = address['results'][0]['geometry']['location']['lat']
             lng = address['results'][0]['geometry']['location']['lng']
             return (lat, lng)
-        else:
-            return None
     else:
-        return None   
+        return (None, None)
 
 ## Generate the ec2 instance
 access_id = ''
@@ -44,38 +61,56 @@ reservations = ec2.get_all_instances()
 instances = [i for r in reservations for i in r.instances]
 this_instance = instances[-1]
 
-system_time = 0
-while system_time < 180:
-    output = this_instance.get_console_output()
-    print output.output
-    time.sleep(30)
-    system_time += 30
+time.sleep(180)
 
-## Get the ec2 public dns
-dns_name = reservation.instances[0].public_dns_name
+for r in ec2.get_all_instances():
+    if r.id == reservation.id:
+                break
+this_instance = r.instances[0]            
+dns_name = this_instance.public_dns_name
 base_url = "http://" + dns_name + "/maps/api/geocode/json?sensor=false&address="
-    
+
+## Load the iso data
+iso_codes = pd.read_csv('./data/iso_country_code_names.txt', sep=';',
+                        names=['country_name', 'country_code'],
+                        na_values=[],
+                        )
+iso_codes['country_code'][iso_codes['country_name']=='NAMIBIA'] = 'NA'
 
 ## Walk across the files and geocode non-blank addresses
-datadir = ''
+datadir = './data/cleaned_data'
 country_files = os.listdir(datadir) ## fix this
 country_files = [f for f in country_files if 'tsv' in f and ' ' not in f]
 
+
 for f in country_files:
-    df = pd.read_csv(f)
+    fname = datadir + '/' + f
+    df = pd.read_csv(fname)
+    
 
     counter = 0
+    latlng_list = []
     start_time = time.time()
-    for addr in df['person_address']:
-        latlng = geocode_address(addr, base_url)
+    for addr, country in it.izip(df['person_address'], df['person_ctry_code']):
+        if isinstance(addr, str) and len(addr) > 0:
+            if country in iso_codes['country_code'].values:
+                country_name = iso_codes['country_name'][iso_codes['country_code'] == country]
+            else:
+                country_name = ''
+
+            latlng = geocode_address(addr, country_name.values[0], base_url)
+        else:
+            latlng = (None, None)
+        latlng_list.append(latlng)
+        
         counter += 1
-        if counter > 0 and counter %1000 == 0:
+        if counter > 0 and counter % 100 == 0:
             this_time = time.time()
             print 'Average query time:'
             txn_average =  (this_time - start_time) / counter
             print str(txn_average)
             
-    df['lat'], df['lng'] = it.izip(*latlng)
+    df['lat'], df['lng'] = it.izip(*latlng_list)
     df.to_csv('')
  
-ec2.terminate_instances(instance_ids=[r.id])
+ec2.terminate_instances(instance_ids=[this_instance.id])
