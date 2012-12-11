@@ -71,10 +71,11 @@ def myquery(query, db_connection, colnames):
 # Years to group patent data by.
  
 years = [#'1990',
-     #    '1991',
-     #'1992',
-     '1993', '1994', '1995', '1996', '1997', '1998', '1999',
-         '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009',
+         '1991',
+         '1992',
+         '1993', '1994', '1995', '1996', '1997', '1998', '1999',
+         '2000', '2001', '2002', '2003', '2004', '2005', '2006',
+         '2007', '2008', '2009',
          '2010', '2011']
 
 total_elapsed_time = 0
@@ -193,9 +194,9 @@ for year in years:
                              ]
           coauthors = '**'.join(coauthors_clean)
           coauth_clean.append(coauthors)
-     name_output['coauthors'] = coauthors_clean
+     name_output['coauthors'] = coauth_clean
      
-     print(time.time() - coauth_clean_time)
+     print time.time() - coauth_clean_time
 
      # Then here just join the coauthors to the original db
     
@@ -239,4 +240,3 @@ for year in years:
      os.system('ipcluster stop &')
      time.sleep(60)
      gc.collect()
-
