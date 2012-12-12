@@ -9,40 +9,51 @@ import os
 
 os.chdir('/home/markhuberty/Documents/psClean/')
 
+def retrieve_geocoded_response(url,  max_tries=3):
+
+    httperror = True
+    num_tries = 0
+    while httperror and numtries < max_tries:
+        try:
+            response = urllib2.urlopen(url)
+            httperror = False
+        except(urllib2.HTTPError):
+            response = None
+            num_tries += 1
+
+    return(response)
+    
+
 def geocode_address(address, country_name, root_url):
     param = '+'.join(address.split(' '))
     this_url = root_url + param
     print this_url
 
-    try:
-        response = urllib2.urlopen(this_url)
-    except urllib2.HTTPError:
-        response = None
-
-    if response:
-        address = json.load(response)
+    url_response = retrieve_geocoded_response(this_url)
+    
+    if url_response:
+        address = json.load(url_response)
         if address['status'] == 'ZERO_RESULTS':
+
             this_url = this_url + '+' + country_name
-            try:
-                response = urllib2.urlopen(this_url)
-            except urllib2.HTTPError:
-                response = None
-            if response:
-                address = json.load(response)
-                if address['status'] != 'ZERO_RESULTS':
+            url_response = retrieve_geocoded_response(this_url)
+
+            if url_response:
+                address = json.load(url_response)
+                if address['status'] == 'ZERO_RESULTS':
+                    lat, lng = None, None
+                else:
                     lat = address['results'][0]['geometry']['location']['lat']
                     lng = address['results'][0]['geometry']['location']['lng']
-                else:
-                    lat, lng = None, None
             else:
                 lat, lng = None, None
-            return (lat, lng)
+
         else:
             lat = address['results'][0]['geometry']['location']['lat']
             lng = address['results'][0]['geometry']['location']['lng']
-            return (lat, lng)
     else:
-        return (None, None)
+        lat, lng = None, None
+    return (lat, lng)
 
 ## Generate the ec2 instance
 access_id = ''
@@ -65,7 +76,7 @@ time.sleep(180)
 
 for r in ec2.get_all_instances():
     if r.id == reservation.id:
-                break
+        break
 this_instance = r.instances[0]            
 dns_name = this_instance.public_dns_name
 base_url = "http://" + dns_name + "/maps/api/geocode/json?sensor=false&address="
