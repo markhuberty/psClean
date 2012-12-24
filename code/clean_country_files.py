@@ -76,14 +76,14 @@ cat_regex = psCleanup.make_regex(green_energy_cats)
 
 ## Clean the data
 
-country_files = os.listdir('./data')
+country_files = os.listdir('./code')
 country_files = [f for f in country_files if 'tsv' in f]
 
 ## Drop the -no country- file, very very large (32m rows)
 country_files = [f for f in country_files if ' ' not in f]
 
 for idx, f in enumerate(country_files):
-    input_filename = './data/' + f
+    input_filename = './code/' + f
     output_filename = './data/cleaned_data/' + f
 
     print 'Operating on ' + input_filename
