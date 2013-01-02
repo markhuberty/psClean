@@ -64,7 +64,7 @@ ec2 = boto.connect_ec2(aws_access_key_id=access_id,
 
 reservation = ec2.run_instances(image_id='ami-15449d7c',
                                 key_name='huberty_ec2_key',
-                                instance_type='t1.micro',
+                                instance_type='m1.large',
                                 security_groups=['dstk']
                                 )
 ## Get console output:
@@ -91,7 +91,7 @@ iso_codes['country_code'][iso_codes['country_name']=='NAMIBIA'] = 'NA'
 ## Walk across the files and geocode non-blank addresses
 datadir = './data/cleaned_data'
 country_files = os.listdir(datadir) ## fix this
-country_files = [f for f in country_files if 'tsv' in f and ' ' not in f]
+country_files = [f for f in country_files if 'NL' in f]
 
 
 for f in country_files:
@@ -122,6 +122,6 @@ for f in country_files:
             print str(txn_average)
             
     df['lat'], df['lng'] = it.izip(*latlng_list)
-    df.to_csv('')
+    df.to_csv(fname)
  
 ec2.terminate_instances(instance_ids=[this_instance.id])
