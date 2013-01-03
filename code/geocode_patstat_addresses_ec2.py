@@ -6,6 +6,7 @@ import time
 import numpy as np
 import itertools as it
 import os
+import dstk
 
 os.chdir('/home/markhuberty/Documents/psClean/')
 
@@ -55,44 +56,25 @@ def geocode_address(address, country_name, root_url):
         lat, lng = None, None
     return (lat, lng)
 
-def geocode_address2(addresses, country_name, root_url):
+def geocode_address2(addresses, country_name, dstk_instance):
 
-    output = dstk.street2coordinates(root_url, addresses)
+    output = dstk_instance.street2coordinates(root_url, addresses)
     blank_countries = [o for o in output if output[o] is None]
 
     if len(blank_countries) > 0:
-        ## Add stuff here to check, then repeat query, then return. Need to check lat/long too
-            
-        with_country = [o + ' ' + country_name for o in output if output[o] is None]
-        
-        country_output = dstk.street2coordinates(root_url, with_country)
-        
-    
-    url_response = retrieve_geocoded_response(this_url)
-    
-    if url_response:
-        address = json.load(url_response)
-        if address['status'] == 'ZERO_RESULTS':
+        country_addresses = [o + ' ' + country_name for o in blank_countries]
+        country_output = dstk_instance.street2coordinates(root_url, country_addresses)
+        for o in blank_countries:
+            output[o] = country_output[o]
 
-            this_url = this_url + '+' + country_name
-            url_response = retrieve_geocoded_response(this_url)
-
-            if url_response:
-                address = json.load(url_response)
-                if address['status'] == 'ZERO_RESULTS':
-                    lat, lng = None, None
-                else:
-                    lat = address['results'][0]['geometry']['location']['lat']
-                    lng = address['results'][0]['geometry']['location']['lng']
-            else:
-                lat, lng = None, None
-
+    latlng_list = []
+    for result in output:
+        if 'latitude' in result:
+            latlng_list.append((result['latitude'], result['longitude']))
         else:
-            lat = address['results'][0]['geometry']['location']['lat']
-            lng = address['results'][0]['geometry']['location']['lng']
-    else:
-        lat, lng = None, None
-    return (lat, lng)
+            latlng_list.append((None, None))
+
+    return latlng_list
 
 ## Generate the ec2 instance
 access_id = ''
@@ -120,6 +102,9 @@ this_instance = r.instances[0]
 dns_name = this_instance.public_dns_name
 base_url = "http://" + dns_name + "/maps/api/geocode/json?sensor=false&address="
 
+## Instantiate the dstk instance
+dstk_endpoint = dstk.DSTK('apiBase': dns_name)
+
 ## Load the iso data
 iso_codes = pd.read_csv('./data/iso_country_code_names.txt', sep=';',
                         names=['country_name', 'country_code'],
@@ -139,29 +124,45 @@ for f in country_files:
     
 
     counter = 0
-    latlng_list = []
+    latlng_results = []
+    addr_list = []
     start_time = time.time()
-    for addr, country in it.izip(df['person_address'], df['person_ctry_code']):
-        if isinstance(addr, str) and len(addr) > 0:
+    for idx, (addr, country) in enumerate(it.izip(df['person_address'],
+                                                  df['person_ctry_code']
+                                                  )
+                                          ):
+        if idx > 0 and not (idx % 1000 == 0):
+            addr_list.append(addr)
+        else:
             if country in iso_codes['country_code'].values:
-                country_name = iso_codes['country_name'][iso_codes['country_code'] == country]
+                country_name = iso_codes['country_name'] \
+                               [iso_codes['country_code'] == country]
             else:
                 country_name = ''
-
-            latlng = geocode_address(addr, country_name.values[0], base_url)
-        else:
-            latlng = (None, None)
-        print latlng
-        latlng_list.append(latlng)
-        
-        counter += 1
-        if counter > 0 and counter % 100 == 0:
-            this_time = time.time()
-            print 'Average query time:'
-            txn_average =  (this_time - start_time) / counter
-            print str(txn_average)
+            latlng = geocode_addresses2(addr_list, country_name, dstk_endpoint)
+            latlng_results.extend(latlng)
+            addr_list = []
             
-    df['lat'], df['lng'] = it.izip(*latlng_list)
-    df.to_csv(fname)
+        # if isinstance(addr, str) and len(addr) > 0:
+        #     if country in iso_codes['country_code'].values:
+        #         country_name = iso_codes['country_name'][iso_codes['country_code'] == country]
+        #     else:
+        #         country_name = ''
+
+        #     latlng = geocode_address(addr, country_name.values[0], base_url)
+        # else:
+        #     latlng = (None, None)
+        # print latlng
+        # latlng_list.append(latlng)
+        
+        # counter += 1
+        # if counter > 0 and counter % 100 == 0:
+        #     this_time = time.time()
+        #     print 'Average query time:'
+        #     txn_average =  (this_time - start_time) / counter
+        #     print str(txn_average)
+            
+    df['lat'], df['lng'] = it.izip(*latlng_results)
+    df.to_csv('latlng_' + fname)
  
 ec2.terminate_instances(instance_ids=instances)
