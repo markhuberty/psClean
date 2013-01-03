@@ -55,9 +55,48 @@ def geocode_address(address, country_name, root_url):
         lat, lng = None, None
     return (lat, lng)
 
+def geocode_address2(addresses, country_name, root_url):
+
+    output = dstk.street2coordinates(root_url, addresses)
+    blank_countries = [o for o in output if output[o] is None]
+
+    if len(blank_countries) > 0:
+        ## Add stuff here to check, then repeat query, then return. Need to check lat/long too
+            
+        with_country = [o + ' ' + country_name for o in output if output[o] is None]
+        
+        country_output = dstk.street2coordinates(root_url, with_country)
+        
+    
+    url_response = retrieve_geocoded_response(this_url)
+    
+    if url_response:
+        address = json.load(url_response)
+        if address['status'] == 'ZERO_RESULTS':
+
+            this_url = this_url + '+' + country_name
+            url_response = retrieve_geocoded_response(this_url)
+
+            if url_response:
+                address = json.load(url_response)
+                if address['status'] == 'ZERO_RESULTS':
+                    lat, lng = None, None
+                else:
+                    lat = address['results'][0]['geometry']['location']['lat']
+                    lng = address['results'][0]['geometry']['location']['lng']
+            else:
+                lat, lng = None, None
+
+        else:
+            lat = address['results'][0]['geometry']['location']['lat']
+            lng = address['results'][0]['geometry']['location']['lng']
+    else:
+        lat, lng = None, None
+    return (lat, lng)
+
 ## Generate the ec2 instance
-access_id = 'AKIAI3ARG3W2EHTBPLJA'
-access_key = 'GPGdaSSxUSjPtVJNrIL58Ld/ZSR5rowPb0xjJfBi'
+access_id = ''
+access_key = ''
 ec2 = boto.connect_ec2(aws_access_key_id=access_id,
                        aws_secret_access_key=access_key
                        )
