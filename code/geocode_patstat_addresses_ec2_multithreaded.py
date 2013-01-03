@@ -1,4 +1,5 @@
 import Queue
+import boto
 import httplib
 import json
 import os
@@ -19,6 +20,21 @@ class ThreadUrl(threading.Thread):
         self.base_url = base_url
 
 
+    def retrieve_url(self, url_string, max_errors):
+        httperror = True
+        error_count = 0
+        http_result = None
+        while httperror and error_count < max_errors:
+            try:
+                http_result = urllib2.urlopen(url_string)
+                httperror = False
+            except urllib2.HTTPError, e:
+                print e.code
+                error_count += 1
+                time.sleep(1)
+        return http_result
+
+            
     def geocode(self, address):
         """
         Geocodes a single address, checking for whether null
@@ -33,37 +49,45 @@ class ThreadUrl(threading.Thread):
             encoded_address = urllib.urlencode(encode_dict)
             
             this_url = self.base_url + '%s' % encoded_address
+            print this_url
             
-            result = urllib2.urlopen(this_url)
-            json_result = json.load(result)
+            result = self.retrieve_url(this_url, 3)
 
-            if json_result['status'] == "OK":
-                out = (address,
-                       json_result['results'][0]['geometry']['location']['lat'],
-                       json_result['results'][0]['geometry']['location']['lng']
-                       )
-                
-            elif json_result['status'] == "ZERO_RESULTS" and self.country is not None:
-                encode_dict = {'sensor': 'false',
-                               'address': address + ' ' + self.country
-                               }
-                encoded_address = urllib.urlencode(encode_dict)
-                
-                this_url = base_url + '%s' % encoded_address
-
-                    
-                result = urllib2.urlopen(this_url)
+            if result is not None:
                 json_result = json.load(result)
-                if json_result['status'] == 'OK':
-                    lat = json_result['results'][0]['geometry']['location']['lat']
-                    lng = json_result['results'][0]['geometry']['location']['lng']
+
+                if json_result['status'] == "OK":
                     out = (address,
-                           lat,
-                           lng
+                           json_result['results'][0]['geometry']['location']['lat'],
+                           json_result['results'][0]['geometry']['location']['lng']
                            )
+
+                elif (json_result['status'] == "ZERO_RESULTS" and
+                      self.country is not None):
+                    encode_dict = {'sensor': 'false',
+                                   'address': address + ' ' + self.country
+                                   }
+                    encoded_address = urllib.urlencode(encode_dict)
+
+                    this_url = base_url + '%s' % encoded_address
+                    print this_url
+
+                    result = self.retrieve_url(this_url, 3)
+                    if result is not None:
+                        json_result = json.load(result)
+                        if json_result['status'] == 'OK':
+                            lat = json_result['results'][0]['geometry']['location']['lat']
+                            lng = json_result['results'][0]['geometry']['location']['lng']
+                            out = (address,
+                                   lat,
+                                   lng
+                                   )
+                        else:
+                            out = (address, None, None)
+                    else:
+                        out = (address, None, None)
                 else:
                     out = (address, None, None)
-
             else:
                 out = (address, None, None)
         else:
@@ -134,8 +158,8 @@ def short_to_long_country(country_code, codes, countries):
     Assumes codes and countries are pandas Series objects of the same
     length
     """
-    if country_code in codes:
-        long_country = countries[codes == country_code][0]
+    if country_code in codes.values:
+        long_country = countries[codes == country_code].values[0]
     else:
         long_country = None
     return long_country
@@ -150,7 +174,7 @@ ec2 = boto.connect_ec2(aws_access_key_id=access_id,
                        )
 
 reservation = ec2.run_instances(image_id='ami-15449d7c',
-                                key_name='huberty_ec2_key',
+                                key_name='huberty_ec2_key_2',
                                 instance_type='m1.large',
                                 security_groups=['dstk']
                                 )
@@ -159,13 +183,23 @@ reservation = ec2.run_instances(image_id='ami-15449d7c',
 reservations = ec2.get_all_instances()
 instances = [i for r in reservations for i in r.instances]
 this_instance = instances[-1]
+
 ## Give it time to boot
-time.sleep(60)
+instance_check_interval = 30
+instance_boot_time = 0
+while this_instance.state == u'pending':
+    print 'instance pending'
+    time.sleep(instance_check_interval)
+    instance_boot_time += instance_check_interval
+    this_instance.update()
+
+#time.sleep(180)
 
 for r in ec2.get_all_instances():
     if r.id == reservation.id:
         break
-this_instance = r.instances[0]            
+this_instance = r.instances[0]
+print this_instance.state
 dns_name = this_instance.public_dns_name
 
 ## Set the directory root and dstk URL
@@ -197,14 +231,19 @@ for f in country_files:
     this_country = df['person_ctry_code'].values[0]
     long_country = short_to_long_country(this_country,
                                          iso_codes['country_code'],
-                                         iso_codes['contry_name']
+                                         iso_codes['country_name']
                                          )
-    output = multithreaded_geocode(num_threads=10,
-                                   df['person_address'].values,
+    time_start = time.time()
+    output = multithreaded_geocode(num_threads=2,
+                                   addresses=df['person_address'].values[0:100],
                                    country=long_country,
                                    base_url=base_url
                                    )
+    time_end = time.time()
+    elapsed_time = time_end - time_start
+    print 'Elapsed time: %s' % str(elapsed_time)
     output_fname = 'geocoded_' + fname
     output.to_csv(output_fname)
 
+ec2.terminate_instances(instance_ids=[r.instances[0].id])
 

@@ -58,12 +58,12 @@ def geocode_address(address, country_name, root_url):
 
 def geocode_address2(addresses, country_name, dstk_instance):
 
-    output = dstk_instance.street2coordinates(root_url, addresses)
+    output = dstk_instance.street2coordinates(addresses)
     blank_countries = [o for o in output if output[o] is None]
 
     if len(blank_countries) > 0:
         country_addresses = [o + ' ' + country_name for o in blank_countries]
-        country_output = dstk_instance.street2coordinates(root_url, country_addresses)
+        country_output = dstk_instance.street2coordinates(country_addresses)
         for o in blank_countries:
             output[o] = country_output[o]
 
@@ -77,14 +77,14 @@ def geocode_address2(addresses, country_name, dstk_instance):
     return latlng_list
 
 ## Generate the ec2 instance
-access_id = ''
-access_key = ''
+access_id = 'AKIAIMPZXYPBFN3GUVYQ'
+access_key = 'r3E7/FNJPrXskxaOkClkveYQmH12BV5Tg5+DMlLS'
 ec2 = boto.connect_ec2(aws_access_key_id=access_id,
                        aws_secret_access_key=access_key
                        )
 
 reservation = ec2.run_instances(image_id='ami-15449d7c',
-                                key_name='huberty_ec2_key',
+                                key_name='huberty_ec2_key_2',
                                 instance_type='m1.large',
                                 security_groups=['dstk']
                                 )
@@ -100,10 +100,10 @@ for r in ec2.get_all_instances():
         break
 this_instance = r.instances[0]            
 dns_name = this_instance.public_dns_name
-base_url = "http://" + dns_name + "/maps/api/geocode/json?sensor=false&address="
+base_url = "http://" + dns_name #+ "/maps/api/geocode/json?sensor=false&address="
 
 ## Instantiate the dstk instance
-dstk_endpoint = dstk.DSTK('apiBase': dns_name)
+dstk_endpoint = dstk.DSTK({'apiBase': base_url})
 
 ## Load the iso data
 iso_codes = pd.read_csv('./data/iso_country_code_names.txt', sep=';',
@@ -127,19 +127,22 @@ for f in country_files:
     latlng_results = []
     addr_list = []
     start_time = time.time()
-    for idx, (addr, country) in enumerate(it.izip(df['person_address'],
-                                                  df['person_ctry_code']
-                                                  )
-                                          ):
-        if idx > 0 and not (idx % 1000 == 0):
-            addr_list.append(addr)
+    for idx, addr, country in it.izip(it.count(),
+                                      df['person_address'],
+                                      df['person_ctry_code']
+                                      ):
+        if idx % 1000 != 0:
+            if isinstance(addr, str):
+                addr_list.append(addr)
+            else:
+                addr_list.append(None)
         else:
             if country in iso_codes['country_code'].values:
                 country_name = iso_codes['country_name'] \
-                               [iso_codes['country_code'] == country]
+                               [iso_codes['country_code'] == country].values[0]
             else:
                 country_name = ''
-            latlng = geocode_addresses2(addr_list, country_name, dstk_endpoint)
+            latlng = geocode_address2(addr_list, country_name, dstk_endpoint)
             latlng_results.extend(latlng)
             addr_list = []
             
