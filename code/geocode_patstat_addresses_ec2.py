@@ -13,7 +13,7 @@ def retrieve_geocoded_response(url,  max_tries=3):
 
     httperror = True
     num_tries = 0
-    while httperror and numtries < max_tries:
+    while httperror and num_tries < max_tries:
         try:
             response = urllib2.urlopen(url)
             httperror = False
@@ -56,8 +56,8 @@ def geocode_address(address, country_name, root_url):
     return (lat, lng)
 
 ## Generate the ec2 instance
-access_id = ''
-access_key = ''
+access_id = 'AKIAI3ARG3W2EHTBPLJA'
+access_key = 'GPGdaSSxUSjPtVJNrIL58Ld/ZSR5rowPb0xjJfBi'
 ec2 = boto.connect_ec2(aws_access_key_id=access_id,
                        aws_secret_access_key=access_key
                        )
@@ -112,6 +112,7 @@ for f in country_files:
             latlng = geocode_address(addr, country_name.values[0], base_url)
         else:
             latlng = (None, None)
+        print latlng
         latlng_list.append(latlng)
         
         counter += 1
@@ -124,4 +125,4 @@ for f in country_files:
     df['lat'], df['lng'] = it.izip(*latlng_list)
     df.to_csv(fname)
  
-ec2.terminate_instances(instance_ids=[this_instance.id])
+ec2.terminate_instances(instance_ids=instances)
