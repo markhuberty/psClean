@@ -33,8 +33,15 @@ class ThreadUrl(threading.Thread):
             try:
                 http_result = urllib2.urlopen(url_string)
                 httperror = False
-            except urllib2.HTTPError, e:
-                print e.code
+            except (urllib2.HTTPError, urllib2.URLError), e:
+                try:
+                    print e.reason
+                except:
+                    pass
+                try:
+                    print e.code
+                except:
+                    pass
                 error_count += 1
                 time.sleep(2)
         return http_result
@@ -57,8 +64,8 @@ class ThreadUrl(threading.Thread):
         Returns a 3-tuple of address, lat, lng from a successfully geocoded address
         """
         formatted_latlng = (address,
-                            json_result['results'][0]['geometry']['location']['lat'],
-                            json_result['results'][0]['geometry']['location']['lng']
+                            json_output['results'][0]['geometry']['location']['lat'],
+                            json_output['results'][0]['geometry']['location']['lng']
                             )
         return formatted_latlng
 
@@ -168,6 +175,52 @@ def multithreaded_geocode(num_threads,
                                            )
     return(results_df)
 
+def multithreaded_multiinstance_geocode(num_threads_per_instance,
+                                        addresses,
+                                        country,
+                                        instance_urls):
+    """
+    Submits geocoding requests for every address in addresses. Requests are spread across
+    num_threads_per_instance * len(instance_urls) threads. Each instance receives requests
+    from only num_threads_per_instance threads. 
+    """
+    input_queue = Queue.Queue()
+    output_queue = Queue.Queue()
+
+    num_threads = num_threads_per_instance * len(instance_urls)
+    thread_urls = instance_urls * num_threads_per_instance
+    #spawn a pool of threads, and pass them queue instance 
+    for i in range(num_threads):
+        t = ThreadUrl(input_queue=input_queue,
+                      output_queue=output_queue,
+                      country=country,
+                      base_url=thread_urls[i]
+                      )
+        t.setDaemon(True)
+        t.start()
+              
+    #populate queue with data   
+    for address in addresses:
+        input_queue.put(address)
+           
+    #wait on the queue until everything has been processed     
+    input_queue.join()
+
+    print 'Input queue exhausted, extracting results'
+    ## Extract the queue data
+    results = []
+    for idx in range(output_queue.qsize()):
+        result = output_queue.get()
+        results.append(result)
+
+    results_df = pd.DataFrame.from_records(results,
+                                           columns=['person_address',
+                                                    'lat',
+                                                    'lng'
+                                                    ]
+                                           )
+    return(results_df)
+
 
 def short_to_long_country(country_code, codes, countries):
     """
@@ -184,8 +237,8 @@ def short_to_long_country(country_code, codes, countries):
 
 
 ## Generate the ec2 instance
-access_id = ''
-access_key = ''
+access_id = 'AKIAIMPZXYPBFN3GUVYQ'
+access_key = 'r3E7/FNJPrXskxaOkClkveYQmH12BV5Tg5+DMlLS'
 ec2 = boto.connect_ec2(aws_access_key_id=access_id,
                        aws_secret_access_key=access_key
                        )
@@ -252,13 +305,14 @@ for f in country_files:
                                          )
     time_start = time.time()
     output = multithreaded_geocode(num_threads=2,
-                                   addresses=df['person_address'].values[0:100],
+                                   addresses=df['person_address'].drop_duplicates().values,
                                    country=long_country,
                                    base_url=base_url
                                    )
     time_end = time.time()
     elapsed_time = time_end - time_start
     print 'Elapsed time: %s' % str(elapsed_time)
+    df = merge(df, output, on='person_address', how='left')
     output_fname = 'geocoded_' + fname
     output.to_csv(output_fname)
 
