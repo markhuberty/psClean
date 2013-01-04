@@ -237,8 +237,8 @@ def short_to_long_country(country_code, codes, countries):
 
 
 ## Generate the ec2 instance
-access_id = 'AKIAIMPZXYPBFN3GUVYQ'
-access_key = 'r3E7/FNJPrXskxaOkClkveYQmH12BV5Tg5+DMlLS'
+access_id = ''
+access_key = ''
 ec2 = boto.connect_ec2(aws_access_key_id=access_id,
                        aws_secret_access_key=access_key
                        )
