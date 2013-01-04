@@ -21,6 +21,11 @@ class ThreadUrl(threading.Thread):
 
 
     def retrieve_url(self, url_string, max_errors):
+        """
+        Attempts to retrieve a url; traps http errors and retries until
+        success or max_errors is reached. Returns result or None if error
+        can't be resolved.
+        """
         httperror = True
         error_count = 0
         http_result = None
@@ -31,57 +36,68 @@ class ThreadUrl(threading.Thread):
             except urllib2.HTTPError, e:
                 print e.code
                 error_count += 1
-                time.sleep(1)
+                time.sleep(2)
         return http_result
+
+
+    def encode_address(self, address_string):
+        """
+        Returns an encoded address string for the datasciencetoolkit
+        Google-style geocoder
+        """
+        encode_dict = {'sensor': 'false',
+                       'address': address_string
+                       }
+        encoded_address = urllib.urlencode(encode_dict)
+        return encoded_address
+
+
+    def format_latlng(self, address, json_output):
+        """
+        Returns a 3-tuple of address, lat, lng from a successfully geocoded address
+        """
+        formatted_latlng = (address,
+                            json_result['results'][0]['geometry']['location']['lat'],
+                            json_result['results'][0]['geometry']['location']['lng']
+                            )
+        return formatted_latlng
 
             
     def geocode(self, address):
         """
         Geocodes a single address, checking for whether null
-        results go away withinclusion of country
+        results go away with inclusion of country
         """
 
         if isinstance(address, str):
-
-            encode_dict = {'sensor': 'false',
-                           'address': address
-                           }
-            encoded_address = urllib.urlencode(encode_dict)
+            
+            
+            encoded_address = self.encode_address(address)
             
             this_url = self.base_url + '%s' % encoded_address
             print this_url
             
-            result = self.retrieve_url(this_url, 3)
+            result = self.retrieve_url(this_url, 5)
 
             if result is not None:
                 json_result = json.load(result)
 
                 if json_result['status'] == "OK":
-                    out = (address,
-                           json_result['results'][0]['geometry']['location']['lat'],
-                           json_result['results'][0]['geometry']['location']['lng']
-                           )
+                    out = self.format_latlng(address, json_result)
 
                 elif (json_result['status'] == "ZERO_RESULTS" and
                       self.country is not None):
-                    encode_dict = {'sensor': 'false',
-                                   'address': address + ' ' + self.country
-                                   }
-                    encoded_address = urllib.urlencode(encode_dict)
+
+                    encoded_address = self.encode_address(address + ' ' + self.country)
 
                     this_url = base_url + '%s' % encoded_address
                     print this_url
 
-                    result = self.retrieve_url(this_url, 3)
+                    result = self.retrieve_url(this_url, 5)
                     if result is not None:
                         json_result = json.load(result)
                         if json_result['status'] == 'OK':
-                            lat = json_result['results'][0]['geometry']['location']['lat']
-                            lng = json_result['results'][0]['geometry']['location']['lng']
-                            out = (address,
-                                   lat,
-                                   lng
-                                   )
+                            out = self.format_latlng(address, json_result)
                         else:
                             out = (address, None, None)
                     else:
@@ -106,6 +122,7 @@ class ThreadUrl(threading.Thread):
             self.output_queue.put(out)                
             #signals to queue job is done
             self.input_queue.task_done()
+            
           
 
 def multithreaded_geocode(num_threads,
@@ -188,12 +205,12 @@ this_instance = instances[-1]
 instance_check_interval = 30
 instance_boot_time = 0
 while this_instance.state == u'pending':
-    print 'instance pending'
+    print this_instance.state
     time.sleep(instance_check_interval)
     instance_boot_time += instance_check_interval
     this_instance.update()
 
-#time.sleep(180)
+
 
 for r in ec2.get_all_instances():
     if r.id == reservation.id:
