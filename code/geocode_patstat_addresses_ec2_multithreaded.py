@@ -12,19 +12,40 @@ import urllib2
 
 class ThreadUrl(threading.Thread):
     """Threaded Url Grab"""
-    def __init__(self, input_queue, output_queue, country, base_url):
+    def __init__(self, input_queue, output_queue, country, base_url, ec2i, server_status):
         threading.Thread.__init__(self)
         self.input_queue = input_queue
         self.output_queue = output_queue
         self.country = country
         self.base_url = base_url
+        self.ec2_instance = ec2i
+        self.server_status = server_status
 
 
-    def retrieve_url(self, url_string, max_errors):
+    def reboot_ec2_instance(self, instance, server_isdown, reboot_check_interval=10):
         """
-        Attempts to retrieve a url; traps http errors and retries until
-        success or max_errors is reached. Returns result or None if error
-        can't be resolved.
+        Check if the server event status is set. If not, reboot the ec2 instance; otherwise wait
+        until the event is unset and return.
+        """
+        if server_isdown.isSet():
+            while server_isdown.isSet():
+                continue
+        else:
+            server_isdown.set()
+            ec2boot = instance.reboot()
+            time.sleep(5)
+            while instance.state == u'pending':
+                time.sleep(reboot_check_interval)
+                instance.update()
+            server_isdown.clear()
+        return True
+
+
+    def retrieve_url(self, url_string, max_errors, ec2_instance, server_status_event):
+        """
+        Attempts to retrieve a url; traps http error. For error code 500, reboots the
+        ec2 instance. Otherwise, retries until success or max_errors is reached. Returns
+        result or None if error can't be resolved.
         """
         httperror = True
         error_count = 0
@@ -33,15 +54,9 @@ class ThreadUrl(threading.Thread):
             try:
                 http_result = urllib2.urlopen(url_string)
                 httperror = False
-            except (urllib2.HTTPError, urllib2.URLError), e:
-                try:
-                    print e.reason
-                except:
-                    pass
-                try:
-                    print e.code
-                except:
-                    pass
+            except urllib2.HTTPError, e:
+                if e.code == 500:
+                    reboot_ec2_instance(ec2_instance, server_status_event)
                 error_count += 1
                 time.sleep(2)
         return http_result
@@ -70,21 +85,19 @@ class ThreadUrl(threading.Thread):
         return formatted_latlng
 
             
-    def geocode(self, address):
+    def geocode(self, address, ec2_instance, server_status_event):
         """
         Geocodes a single address, checking for whether null
         results go away with inclusion of country
         """
 
         if isinstance(address, str):
-            
-            
             encoded_address = self.encode_address(address)
             
             this_url = self.base_url + '%s' % encoded_address
             print this_url
             
-            result = self.retrieve_url(this_url, 5)
+            result = self.retrieve_url(this_url, ec2_instance, server_status_event, 5)
 
             if result is not None:
                 json_result = json.load(result)
@@ -100,7 +113,7 @@ class ThreadUrl(threading.Thread):
                     this_url = base_url + '%s' % encoded_address
                     print this_url
 
-                    result = self.retrieve_url(this_url, 5)
+                    result = self.retrieve_url(this_url, ec2_instance, server_status_event, 5)
                     if result is not None:
                         json_result = json.load(result)
                         if json_result['status'] == 'OK':
@@ -124,7 +137,7 @@ class ThreadUrl(threading.Thread):
             #grabs address from queue
 
             address = self.input_queue.get()
-            out = self.geocode(address)
+            out = self.geocode(address, self.ec2_instance, self.server_status_event)
 
             self.output_queue.put(out)                
             #signals to queue job is done
@@ -135,20 +148,24 @@ class ThreadUrl(threading.Thread):
 def multithreaded_geocode(num_threads,
                           addresses,
                           country,
-                          base_url):
+                          base_url,
+                          ec2_instance):
     """
     Submits geocoding requests for every address in addresses, across num_threads
     threads, to a geocoder at base_url.
     """
     input_queue = Queue.Queue()
     output_queue = Queue.Queue()
+    server_event_status = threading.Event()
     
     #spawn a pool of threads, and pass them queue instance 
     for i in range(num_threads):
         t = ThreadUrl(input_queue=input_queue,
                       output_queue=output_queue,
                       country=country,
-                      base_url=base_url
+                      base_url=base_url,
+                      ec2i=ec2_instance,
+                      server_status_event=server_status_event
                       )
         t.setDaemon(True)
         t.start()
@@ -307,7 +324,8 @@ for f in country_files:
     output = multithreaded_geocode(num_threads=2,
                                    addresses=df['person_address'].drop_duplicates().values,
                                    country=long_country,
-                                   base_url=base_url
+                                   base_url=base_url,
+                                   ec2_instance=this_instance
                                    )
     time_end = time.time()
     elapsed_time = time_end - time_start
