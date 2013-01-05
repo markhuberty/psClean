@@ -254,8 +254,9 @@ def short_to_long_country(country_code, codes, countries):
 
 
 ## Generate the ec2 instance
-access_id = ''
-access_key = ''
+ec2_credentials = pd.read_csv('./data/ec2_access_credentials.csv')
+access_id = ec2_credentials['access_id'].values[0]
+access_key = ec2_credentials['secret_access_code'].values[0]
 ec2 = boto.connect_ec2(aws_access_key_id=access_id,
                        aws_secret_access_key=access_key
                        )
@@ -291,6 +292,8 @@ dns_name = this_instance.public_dns_name
 
 ## Set the directory root and dstk URL
 os.chdir('/home/markhuberty/Documents/psClean/')
+
+
 
 
 #base_url = 'http://www.datasciencetoolkit.org/maps/api/geocode/json?'
