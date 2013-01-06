@@ -353,7 +353,7 @@ for f in country_files:
     print 'Elapsed time: %s' % str(elapsed_time)
     df = pd.merge(df, output, on='person_address', how='left')
     output_fname = datadir + '/geocoded_' + f
-    output.to_csv(output_fname)
+    df.to_csv(output_fname)
 
 ec2.terminate_instances(instance_ids=[r.instances[0].id])
 
