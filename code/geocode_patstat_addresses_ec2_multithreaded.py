@@ -12,14 +12,14 @@ import urllib2
 
 class ThreadUrl(threading.Thread):
     """Threaded Url Grab"""
-    def __init__(self, input_queue, output_queue, country, base_url, ec2i, server_status):
+    def __init__(self, input_queue, output_queue, country, base_url, ec2i, server_status_event):
         threading.Thread.__init__(self)
         self.input_queue = input_queue
         self.output_queue = output_queue
         self.country = country
         self.base_url = base_url
         self.ec2_instance = ec2i
-        self.server_status = server_status
+        self.server_status_event = server_status_event
 
 
     def reboot_ec2_instance(self, instance, server_isdown, reboot_check_interval=10):
@@ -28,15 +28,19 @@ class ThreadUrl(threading.Thread):
         until the event is unset and return.
         """
         if server_isdown.isSet():
+            print 'awaiting server reboot'
             while server_isdown.isSet():
                 continue
         else:
+            print 'server error, rebooting'
+            print threading.current_thread()
             server_isdown.set()
             ec2boot = instance.reboot()
             time.sleep(5)
             while instance.state == u'pending':
                 time.sleep(reboot_check_interval)
                 instance.update()
+            print 'reboot complete'
             server_isdown.clear()
         return True
 
@@ -54,9 +58,19 @@ class ThreadUrl(threading.Thread):
             try:
                 http_result = urllib2.urlopen(url_string)
                 httperror = False
-            except urllib2.HTTPError, e:
-                if e.code == 500:
-                    reboot_ec2_instance(ec2_instance, server_status_event)
+            except (urllib2.HTTPError, urllib2.URLError, httplib.BadStatusLine), e:
+                try:
+                    if e.code == 500:
+                        self.reboot_ec2_instance(ec2_instance, server_status_event)
+                except:
+                    pass
+                try:
+                    if e.reason and server_status_event.isSet():
+                        print 'awaiting server reboot'
+                        while server_status_event.isSet():
+                            continue
+                except:
+                    print e
                 error_count += 1
                 time.sleep(2)
         return http_result
@@ -95,9 +109,9 @@ class ThreadUrl(threading.Thread):
             encoded_address = self.encode_address(address)
             
             this_url = self.base_url + '%s' % encoded_address
-            print this_url
+            #print this_url
             
-            result = self.retrieve_url(this_url, ec2_instance, server_status_event, 5)
+            result = self.retrieve_url(this_url, 5, ec2_instance, server_status_event)
 
             if result is not None:
                 json_result = json.load(result)
@@ -111,9 +125,9 @@ class ThreadUrl(threading.Thread):
                     encoded_address = self.encode_address(address + ' ' + self.country)
 
                     this_url = base_url + '%s' % encoded_address
-                    print this_url
+                    #print this_url
 
-                    result = self.retrieve_url(this_url, ec2_instance, server_status_event, 5)
+                    result = self.retrieve_url(this_url, 5, ec2_instance, server_status_event)
                     if result is not None:
                         json_result = json.load(result)
                         if json_result['status'] == 'OK':
@@ -128,18 +142,21 @@ class ThreadUrl(threading.Thread):
                 out = (address, None, None)
         else:
             out = (address, None, None)
+        print out
         return(out)
 
           
     def run(self):
-
+        orig_input_queue_len = self.input_queue.qsize()
         while True:
             #grabs address from queue
 
             address = self.input_queue.get()
             out = self.geocode(address, self.ec2_instance, self.server_status_event)
-
-            self.output_queue.put(out)                
+            
+            self.output_queue.put(out)
+            # if self.input_queue.qsize() % 1000 == 0:
+            #     print '% percent complete' % self.output_queue.qsize() / float(orig_input_queue_len)
             #signals to queue job is done
             self.input_queue.task_done()
             
@@ -156,7 +173,7 @@ def multithreaded_geocode(num_threads,
     """
     input_queue = Queue.Queue()
     output_queue = Queue.Queue()
-    server_event_status = threading.Event()
+    server_status_event = threading.Event()
     
     #spawn a pool of threads, and pass them queue instance 
     for i in range(num_threads):
@@ -173,7 +190,7 @@ def multithreaded_geocode(num_threads,
     #populate queue with data   
     for address in addresses:
         input_queue.put(address)
-           
+    
     #wait on the queue until everything has been processed     
     input_queue.join()
 
@@ -252,6 +269,9 @@ def short_to_long_country(country_code, codes, countries):
     return long_country
 
 
+## Set the directory root and dstk URL
+os.chdir('/home/markhuberty/Documents/psClean/')
+
 
 ## Generate the ec2 instance
 ec2_credentials = pd.read_csv('./data/ec2_access_credentials.csv')
@@ -290,8 +310,6 @@ this_instance = r.instances[0]
 print this_instance.state
 dns_name = this_instance.public_dns_name
 
-## Set the directory root and dstk URL
-os.chdir('/home/markhuberty/Documents/psClean/')
 
 
 
@@ -333,8 +351,8 @@ for f in country_files:
     time_end = time.time()
     elapsed_time = time_end - time_start
     print 'Elapsed time: %s' % str(elapsed_time)
-    df = merge(df, output, on='person_address', how='left')
-    output_fname = 'geocoded_' + fname
+    df = pd.merge(df, output, on='person_address', how='left')
+    output_fname = datadir + '/geocoded_' + f
     output.to_csv(output_fname)
 
 ec2.terminate_instances(instance_ids=[r.instances[0].id])
