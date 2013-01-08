@@ -40,6 +40,8 @@ class ThreadUrl(threading.Thread):
             while instance.state == u'pending':
                 time.sleep(reboot_check_interval)
                 instance.update()
+            ## Give the server enough time to come up fully
+            time.sleep(60)
             print 'reboot complete'
             server_isdown.clear()
         return True
@@ -87,14 +89,25 @@ class ThreadUrl(threading.Thread):
         encoded_address = urllib.urlencode(encode_dict)
         return encoded_address
 
+    def extract_locality(self, json_output):
+        addr_comp = json_output['results'][0]['address_components']
+        locality = None
+        for element in addr_comp:
+            if 'locality' in element['types']:
+                locality = element['long_name']
+            else:
+                continue
+        return locality
 
     def format_latlng(self, address, json_output):
         """
-        Returns a 3-tuple of address, lat, lng from a successfully geocoded address
+        Returns a 4-tuple of address, lat, lng, locality
+        from a successfully geocoded address
         """
         formatted_latlng = (address,
                             json_output['results'][0]['geometry']['location']['lat'],
-                            json_output['results'][0]['geometry']['location']['lng']
+                            json_output['results'][0]['geometry']['location']['lng'],
+                            self.extract_locality(json_output)
                             )
         return formatted_latlng
 
@@ -133,15 +146,15 @@ class ThreadUrl(threading.Thread):
                         if json_result['status'] == 'OK':
                             out = self.format_latlng(address, json_result)
                         else:
-                            out = (address, None, None)
+                            out = (address, None, None, None)
                     else:
-                        out = (address, None, None)
+                        out = (address, None, None, None)
                 else:
-                    out = (address, None, None)
+                    out = (address, None, None, None)
             else:
-                out = (address, None, None)
+                out = (address, None, None, None)
         else:
-            out = (address, None, None)
+            out = (address, None, None, None)
         print out
         return(out)
 
@@ -204,7 +217,8 @@ def multithreaded_geocode(num_threads,
     results_df = pd.DataFrame.from_records(results,
                                            columns=['person_address',
                                                     'lat',
-                                                    'lng'
+                                                    'lng',
+                                                    'locality'
                                                     ]
                                            )
     return(results_df)
@@ -250,7 +264,8 @@ def multithreaded_multiinstance_geocode(num_threads_per_instance,
     results_df = pd.DataFrame.from_records(results,
                                            columns=['person_address',
                                                     'lat',
-                                                    'lng'
+                                                    'lng',
+                                                    'locality'
                                                     ]
                                            )
     return(results_df)
@@ -309,7 +324,7 @@ for r in ec2.get_all_instances():
 this_instance = r.instances[0]
 print this_instance.state
 dns_name = this_instance.public_dns_name
-
+time.sleep(120)
 
 
 
@@ -329,8 +344,9 @@ iso_codes['country_code'][iso_codes['country_name']=='NAMIBIA'] = 'NA'
 ## Walk across the files and geocode non-blank addresses
 datadir = './data/cleaned_data'
 country_files = os.listdir(datadir) ## fix this
-country_files = [f for f in country_files if 'NL' in f]
-
+country_files = [f for f in country_files if 'cleaned_output_NL' in f
+                 and 'geocoded' not in f
+                 ]
     
 
 for f in country_files:
@@ -343,7 +359,7 @@ for f in country_files:
                                          )
     time_start = time.time()
     output = multithreaded_geocode(num_threads=2,
-                                   addresses=df['person_address'].drop_duplicates().values,
+                                   addresses=df['person_address'].drop_duplicates().values[0:1000],
                                    country=long_country,
                                    base_url=base_url,
                                    ec2_instance=this_instance
