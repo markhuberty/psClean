@@ -7,8 +7,6 @@ from collections import namedtuple
 from itertools import chain
 
 
-
-
 ## Generate comparitave statistics for fung, leuven, han disambiguation results
 
 
