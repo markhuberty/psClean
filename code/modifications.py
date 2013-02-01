@@ -6,6 +6,8 @@
 # Input: name dataframe
 # Return: dataframe with multiple names removes, split, and stacked at the bottom
 
+
+
 def do_all(fullframe):
     """ 
     Takes in dataframe with name information;
@@ -17,11 +19,13 @@ def do_all(fullframe):
     
     start = time.time()
    
-    colnames = ['leuven_id', 'fung_name']
-    criterion = fullframe['person_name'].map(lambda x: len(x)>60)
+    allcolnames = fullframe.columns.tolist()
+    allcolnames.pop(allcolnames.index('Name'))
+    colnames  = allcolnames
+    criterion = fullframe['Name'].map(lambda x: len(x)>60)
     multinames = fullframe[criterion]
 
-    splitnames = get_multi_names(multinames) 
+    splitnames = get_multi_names(multinames, colnames) 
     
     name1 = fullframe.drop(multinames.index.tolist())
     mynames = name1.append(splitnames)
@@ -33,6 +37,7 @@ def do_all(fullframe):
     return mynames
 
 
+print 'me'
 def split_multi_names(multiname):
     """get list of separated names """
     names = multiname.split(',')
@@ -41,14 +46,14 @@ def split_multi_names(multiname):
         names = [multiname]
     return names
 
-def get_multi_names(myframe):
+def get_multi_names(myframe, colnames):
     """ get data frame of split names with associated information """
     all_names = list()    
     for idx in myframe.index.tolist():
         dd = dict( [ (col, myframe.get_value(idx, col))
                      for col in colnames] )
-        names = split_multi_names(myframe.get_value(idx, 'person_name'))
-        data = [ dict( dd.items()+ [('person_name', name)]) for name in names]
+        names = split_multi_names(myframe.get_value(idx, 'Name'))
+        data = [ dict( dd.items()+ [('Name', name)]) for name in names]
     
         all_names += data
     split_names = pandas.DataFrame(all_names)
@@ -67,23 +72,21 @@ def do_addresses(myframe):
 
     """
     
-    fung_edit = myframe[['person_name', 'person_address']]
-    fung_stay = myframe[['leuven_name', 'leuven_id', 'leuven_hrm_level', 
-                         'person_ctry_code', 'sector', 'fung_id', 
-                         'fung_name', 'Apr12_Person_id', 'han_id', 
-                         'han_name', 'TRUEfung_id', 'has_fung', 'has_han']]
+    fung_edit = myframe[['Name', 'Address']]
+    fung_stay = myframe[['Patent', 'Person','Country', 'LegalId', 'Coauthor', 'Class', 'Year', 'Lat', 'Lng', 'Locality', 'Unique_Record_ID']]
+
 
     start = time.time()
 
-    criterion = myframe['person_name'].map(lambda x: x.endswith(' NL'))
+    criterion = myframe['Name'].map(lambda x: x.endswith(' NL'))
     has_address = myframe[criterion]
-    has_address = has_address[pandas.isnull(has_address['person_address'])]
+    has_address = has_address[pandas.isnull(has_address['Address'])]
     
     ids = has_address.index.tolist()
-    together = [ has_address.person_name.ix[pid].split(',') for pid in ids]
+    together = [ has_address.Name.ix[pid].split(',') for pid in ids]
 
 
-    names = [ (''.join(thing[0:-2]), thing[-2:]) for thing in together]
+    names = [ (''.join(thing[0:-2]), ''.join(thing[-2:])) for thing in together]
     fung_edit.ix[ids] = names 
     
     myframe = pandas.merge(fung_stay, fung_edit, left_index = True, right_index = True)
