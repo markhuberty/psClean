@@ -64,7 +64,7 @@ def get_multi_names(myframe, colnames):
 #To clean out address inforamation - find records where person name has country code 
 #    and there is no information in address field.
 
-def do_addresses(myframe):
+def do_addresses(myframe, country_code):
     """ 
     Takes in dataframe, replaces adress names with cleaned name, 
     inserts address information to address field.
@@ -78,7 +78,7 @@ def do_addresses(myframe):
 
     start = time.time()
 
-    criterion = myframe['Name'].map(lambda x: x.endswith(' NL'))
+    criterion = myframe['Name'].map(lambda x: x.endswith(' ' + country_code))
     has_address = myframe[criterion]
     has_address = has_address[pandas.isnull(has_address['Address'])]
     
