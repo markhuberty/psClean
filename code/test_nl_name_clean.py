@@ -2,6 +2,7 @@ import pandas as pd
 import time
 import modifications as md
 
+
 city_df = pd.read_csv('/home/markhuberty/Documents/psClean/data/worldcitiespop.txt')
 city_df = city_df[city_df.Country=='nl'][['City', 'Latitude', 'Longitude', 'Population']]
 is_str = [True if isinstance(city, str) else False for city in city_df.City]
