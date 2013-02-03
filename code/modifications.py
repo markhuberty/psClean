@@ -5,8 +5,13 @@
 ## To clean out multiple names
 # Input: name dataframe
 # Return: dataframe with multiple names removes, split, and stacked at the bottom
+import time
+import pandas as pd
+import re
 
-
+def str_findall(strng, val):
+    idx = [m.start() for m in re.finditer(val, strng)]
+    return idx
 
 def do_all(fullframe):
     """ 
@@ -56,7 +61,7 @@ def get_multi_names(myframe, colnames):
         data = [ dict( dd.items()+ [('Name', name)]) for name in names]
     
         all_names += data
-    split_names = pandas.DataFrame(all_names)
+    split_names = pd.DataFrame(all_names)
     return split_names
          
 
@@ -80,19 +85,173 @@ def do_addresses(myframe, country_code):
 
     criterion = myframe['Name'].map(lambda x: x.endswith(' ' + country_code))
     has_address = myframe[criterion]
-    has_address = has_address[pandas.isnull(has_address['Address'])]
+    has_address = has_address[pd.isnull(has_address['Address'])]
+    has_address_idx = has_address.index.tolist()
     
-    ids = has_address.index.tolist()
-    together = [ has_address.Name.ix[pid].split(',') for pid in ids]
+    comma_idx = [str_findall(n, 'country_code') for n in has_address.Name.values]
 
+    names = []
+    addresses = []
+    for idx, comma_loc in enumerate(comma_idx):
+        if len(comma_loc) >= 2:
+            this_field = has_address.Name.values[idx]
+            this_name = this_field[0:comma_loc[-2]]
+            this_address = this_field[comma_loc[-2]:]
+            names.append(this_name)
+            addresses.append(this_address)
+        else:
+            names.append(has_address.Name.values[idx])
+            addresses.append(has_address.Address.values[idx])
 
-    names = [ (''.join(thing[0:-2]), ''.join(thing[-2:])) for thing in together]
-    fung_edit.ix[ids] = names 
     
-    myframe = pandas.merge(fung_stay, fung_edit, left_index = True, right_index = True)
+    fung_edit.Name.values[has_address_idx] = names
+    fung_edit.Address.values[has_address_idx] = addresses
+    myframe = pd.merge(fung_stay, fung_edit, left_index = True, right_index = True)
 
     end = time.time()
     runtime = end-start
 
     print runtime
     return myframe
+
+
+## Two address approaches:
+## 1. Look for double occurrances of country code
+## 2. Look for names that end in \scountry_code,
+##    hack off everything from prior comma
+## 3. Look for city in the name string, take the last city instance
+def find_address(names, country_code, cities):
+
+    #addr_regex = re.compile(country_code + '[\w\s,&]+?' + country_code + '$')
+    addr_regex = re.compile('\s[0-9]+?[\w\s,&]+?' + country_code + '$')
+    #addr_regex = re.compile('basdfa')
+
+    names_clean = []
+    addresses_clean = []
+    lat_list = []
+    lng_list = []
+    locality_list = []
+    addr_indices = []
+    counter = 0
+    
+    for idx, n in enumerate(names):
+        this_name = n
+        this_address = ''
+        locality = ''
+        lat = 0
+        lng = 0
+        r_addr = find_address_regex(n, addr_regex)
+
+        if r_addr:
+            this_name = n[0:r_addr.start()]
+            this_address = r_addr.group(0)
+            locality, lat, lng = geocode_from_city_name(this_address, cities)
+            addr_indices.append(idx)
+            counter += 1
+        elif n.endswith(' ' + country_code):
+            c_addr = find_address_comma(n, min_len=60)
+            if c_addr:
+                this_name = c_addr[0]
+                this_address = c_addr[1]
+                locality, lat, lng = geocode_from_city_name(this_address, cities)
+                addr_indices.append(idx)
+                counter +=1
+            else:
+                city_addr = find_address_city(n, cities)
+                if city_addr:
+                    this_name = city_addr[0]
+                    this_address = city_addr[1]
+                    locality, lat, lng = geocode_from_city_name(this_address, cities)
+                    addr_indices.append(idx)
+                    counter += 1
+        names_clean.append(this_name)
+        addresses_clean.append(this_address)
+        lat_list.append(lat)
+        lng_list.append(lng)
+        locality_list.append(locality)
+
+    print counter
+    return names_clean, addresses_clean, lat_list, lng_list, locality_list
+
+
+def find_address_regex(n, addr_regex):
+    out = addr_regex.search(n)
+    return out
+
+def find_address_comma(n, min_len=60):
+    """
+    Checks whether we have address-like information
+    on the supposition that addresses for strings longer
+    thank min_len start at the second-to-last comma
+    """
+    out = None
+    if len(n) > min_len:
+        comma_loc = str_findall(n, ',')
+        if len(comma_loc) > 2:
+            n_out = n[0:comma_loc[-2]]
+            addr = n[comma_loc[-2]:]
+            out = (n_out, addr)
+    return out
+
+def find_address_city(n, cities):
+    """
+    Checks for city-only address information by checking each
+    word in an address against a city list. 'cities' should be either
+    a list or a dict w/ cities as keys; the dict is better as lookup scales.
+    """
+    out = None
+    n_words = n.split(' ')
+
+    city_search = [n_words.index(word) for word in n_words if
+                   word in cities
+                   ]
+    if len(city_search) > 0:
+        city_index = max(city_search)
+        this_name = ' '.join(n_words[0:city_index])
+        this_address = ' '.join(n_words[city_index:])
+        out = (this_name, this_address)
+    return out
+
+def geocode_from_city_name(address, city_lat_lng):
+    """
+    Given an address and a dict of city:(lat, lng),
+    return the city and the geocoordinates if the city name occurs
+    in the address. 
+    """
+    out = None
+    address_words = address.split(' ')
+
+    city_search = [word for word in address_words if word in city_lat_lng]
+
+    if len(city_search) > 0:
+        city = city_search[-1]
+        lat_lng = city_lat_lng[city]
+        out = (city, lat_lng[0], lat_lng[1])
+    else:
+        out = ('NONE', 0, 0)
+    return out
+
+
+def sort_name(name_string, threshold=1):
+    """
+    sorts a name string alphabetically by word, keeping only words
+    longer than threshold characters
+    """
+    name_split = name_string.split(' ')
+    name_long = [n for n in name_split if len(n) > threshold]
+    if len(name_long) > 0:
+        name_sorted = sorted(name_long)
+        out = ' '.join(name_sorted)
+        out = clean_name(out)
+    else:
+        out = ''
+    return out
+
+def clean_name(name_string, regex_string='[,\.]'):
+    """
+    Strips characters from a string; should be used for punctuation cleaning;
+    returns string w/o leading, trailing spaces
+    """
+    out = re.sub(regex_string, '', name_string)
+    out = out.strip()
+    return out
