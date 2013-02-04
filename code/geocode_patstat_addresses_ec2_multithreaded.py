@@ -12,7 +12,13 @@ import urllib2
 
 class ThreadUrl(threading.Thread):
     """Threaded Url Grab"""
-    def __init__(self, input_queue, output_queue, country, base_url, ec2i, server_status_event):
+    def __init__(self,
+                 input_queue,
+                 output_queue,
+                 country,
+                 base_url,
+                 ec2i,
+                 server_status_event):
         threading.Thread.__init__(self)
         self.input_queue = input_queue
         self.output_queue = output_queue
@@ -21,10 +27,11 @@ class ThreadUrl(threading.Thread):
         self.ec2_instance = ec2i
         self.server_status_event = server_status_event
 
-
-    def reboot_ec2_instance(self, instance, server_isdown, reboot_check_interval=10):
+    def reboot_ec2_instance(self, instance, server_isdown,
+                            reboot_check_interval=10):
         """
-        Check if the server event status is set. If not, reboot the ec2 instance; otherwise wait
+        Check if the server event status is set. If not,
+        reboot the ec2 instance; otherwise wait
         until the event is unset and return.
         """
         if server_isdown.isSet():
@@ -46,11 +53,12 @@ class ThreadUrl(threading.Thread):
             server_isdown.clear()
         return True
 
-
-    def retrieve_url(self, url_string, max_errors, ec2_instance, server_status_event):
+    def retrieve_url(self, url_string, max_errors,
+                     ec2_instance, server_status_event):
         """
-        Attempts to retrieve a url; traps http error. For error code 500, reboots the
-        ec2 instance. Otherwise, retries until success or max_errors is reached. Returns
+        Attempts to retrieve a url; traps http error.
+        For error code 500, reboots the ec2 instance. Otherwise,
+        retries until success or max_errors is reached. Returns
         result or None if error can't be resolved.
         """
         httperror = True
@@ -60,10 +68,13 @@ class ThreadUrl(threading.Thread):
             try:
                 http_result = urllib2.urlopen(url_string)
                 httperror = False
-            except (urllib2.HTTPError, urllib2.URLError, httplib.BadStatusLine), e:
+            except (urllib2.HTTPError, urllib2.URLError,
+                    httplib.BadStatusLine), e:
                 try:
                     if e.code == 500:
-                        self.reboot_ec2_instance(ec2_instance, server_status_event)
+                        self.reboot_ec2_instance(ec2_instance,
+                                                 server_status_event
+                                                 )
                 except:
                     pass
                 try:
@@ -76,7 +87,6 @@ class ThreadUrl(threading.Thread):
                 error_count += 1
                 time.sleep(2)
         return http_result
-
 
     def encode_address(self, address_string):
         """
@@ -104,14 +114,15 @@ class ThreadUrl(threading.Thread):
         Returns a 4-tuple of address, lat, lng, locality
         from a successfully geocoded address
         """
+        lat = json_output['results'][0]['geometry']['location']['lat']
+        lng = json_output['results'][0]['geometry']['location']['lng']
         formatted_latlng = (address,
-                            json_output['results'][0]['geometry']['location']['lat'],
-                            json_output['results'][0]['geometry']['location']['lng'],
+                            lat,
+                            lng,
                             self.extract_locality(json_output)
                             )
         return formatted_latlng
 
-            
     def geocode(self, address, ec2_instance, server_status_event):
         """
         Geocodes a single address, checking for whether null
@@ -120,11 +131,14 @@ class ThreadUrl(threading.Thread):
 
         if isinstance(address, str):
             encoded_address = self.encode_address(address)
-            
+
             this_url = self.base_url + '%s' % encoded_address
             #print this_url
-            
-            result = self.retrieve_url(this_url, 5, ec2_instance, server_status_event)
+
+            result = self.retrieve_url(this_url,
+                                       5,
+                                       ec2_instance, server_status_event
+                                       )
 
             if result is not None:
                 json_result = json.load(result)
@@ -135,7 +149,8 @@ class ThreadUrl(threading.Thread):
                 elif (json_result['status'] == "ZERO_RESULTS" and
                       self.country is not None):
 
-                    encoded_address = self.encode_address(address + ' ' + self.country)
+                    addr = address + ' ' + self.country
+                    encoded_address = self.encode_address(addr)
 
                     this_url = base_url + '%s' % encoded_address
                     #print this_url
