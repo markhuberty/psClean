@@ -24,6 +24,11 @@ nl_citl['city_hash'] = [dmeta(city)[0] for city in nl_citl.city]
 ## then geocode
 
 def string_jaccard(str1, strlist, threshold=0.95):
+    """
+    Given a string and a list of strings, calculates
+    the pairwise jaccard similarity str1:strlist and
+    returns the closest for str1 in strlist.
+    """
     set1 = set(list(str1))
     setlist = [list(s) for s in strlist]
 
@@ -50,63 +55,69 @@ def sort_string(str1):
     return ' '.join(str_split)
 
 def search_city(str1, city_list):
+    """
+    Checks whether any words in str1 occur in a list of cities.
+    Currently returns just the first match.
+    """
     str_split = str1.split(' ')
     n_candidates = [word for word in str_split if word in city_list]
     if len(n_candidates) > 0:
         return(n_candidates[0])
     else:
         return None
-    
+
+def city_checker(n, city_list, lat_list, lng_list, j_threshold):
+    """
+    Matches a string n to the city list and returns the lat/lng pair.
+    Match operates in two stages: check for exact matches, then check for fuzzy
+    matches using the Jaccard similarity between strings
+    """
+    lat_lng = None
+    if n in city_list:
+        lat_out = lat_list[city_list == n].values[0]
+        lng_out = lng_list[city_list == n].values[0]
+        lat_lng = (lat_out, lng_out)
+    else:
+        n_candidate = string_jaccard(n, city_list, j_threshold)
+
+        if n_candidate is not None:
+            lat_out = lat_list[city_list == n_candidate].values[0]
+            lng_out = lng_list[city_list == n_candidate].values[0]
+            lat_lng = (lat_out, lng_out)
+    return lat_lng
+
 def hashed_geocoder(cities, city_list, lat_list, lng_list, hashfun, jaccard_threshold):
     """
     Given a set of cities to geocode, compares to a master city_list and
-    returns a lat, lng pair. If no exact match is found, compares using the jaccard index against a threshold.
-    First hashes both the cities and the master cities to permit
-    faster lookups in long city lists. 
+    returns a lat, lng pair. If no exact match is found, compares using the
+    jaccard index against a threshold.
+    Makes a first pass with hashed values, trying to look at only likely matches in
+    long city lists. 
     """
     hashed_cities = pd.Series([hashfun(c)[0] for c in cities.values])
     hashed_city_list = pd.Series([hashfun(c)[0] for c in city_list.values])
-    lat_lng = []
+    lat_lng_list = []
     for n, h in zip(cities.values, hashed_cities.values):
         lat, lng = 0,0
         if h in hashed_city_list.values:
             ## Hash matches
             city_candidates = city_list[hashed_city_list.values == h]
-            
-            if n in city_candidates.values:
-                lat = lat_list[city_list == n].values[0]
-                lng = lng_list[city_list == n].values[0]
-            else:
-                ## Non-exact name match
-                n_candidate = string_jaccard(n,
-                                             city_candidates.values,
-                                             jaccard_threshold
-                                             )
-                if n_candidate is not None:
-                    lat = lat_list[city_list == n_candidate].values[0]
-                    lng = lng_list[city_list == n_candidate].values[0]
-                else:
-                    ## Very inexact match, check if any word matches
-                    ## in the city subset
-                    n_candidate = search_city(n, city_candidates.values)
-                    if n_candidate is not None:
-                        lat = lat_list[city_list == n_candidate].values[0]
-                        lng = lng_list[city_list == n_candidate].values[0]
-                    else:
-                        ## Still no match, check every city
-                        n_candidate = search_city(n, city_list.values)
-                        if n_candidate is not None:
-                            lat = lat_list[city_list == n_candidate].values[0]
-                            lng = lng_list[city_list == n_candidate].values[0]
+            lat_lng = city_checker(n,
+                                   city_candidates,
+                                   lat_list,
+                                   lng_list,
+                                   jaccard_threshold
+                                   )
         else:
-            ## Check every city for word match
-            n_candidate = search_city(n, city_list.values)
-            
-            if n_candidate is not None:
-                lat = lat_list[city_list == n_candidate].values[0]
-                lng = lng_list[city_list == n_candidate].values[0]
-        lat_lng.append((n, lat, lng))
-    return lat_lng
+            lat_lng = city_checker(n,
+                                   city_list,
+                                   lat_list,
+                                   lng_list,
+                                   jaccard_threshold
+                                   )
+
+        lat_lng_list((n, lat, lng))
+    return lat_lng_list
                 
 latlng = hashed_geocoder(nl_citl.city,
                          city_df.City,
