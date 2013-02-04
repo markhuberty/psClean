@@ -8,10 +8,21 @@ import pandas as pd
 import re
 import sklearn
 
-os.chdir()
+os.chdir('/home/markhuberty/Documents/psClean')
 
-nl_data = pd.read_csv()
-nl_abstr = pd.read_csv()
+nl_data = pd.read_csv('./data/cleaned_data/cleaned_output_NL.tsv')
+nl_data.set_index('appln_id')
+nl_abstr = pd.read_csv('./data/nl_abstracts_raw.csv')
+nl_abstr.set_index('appln_id')
+
+nl_all = pd.merge(nl_data, nl_abstr, how='inner', left_on='appln_id', right_on='appln_id')
+
+code_cats = {}
+for t in test:
+    if t[0] in code_cats:
+        code_cats[t[0]] += 1
+    else:
+        code_cats[t[0]] = 1
 
 labels = nl_abstr['ecla_class'].values
 
@@ -19,7 +30,8 @@ labels = nl_abstr['ecla_class'].values
 def generate_tfidf(str_list,
                    ngram_range=(1,1),
                    tfidf=True,
-                   token_pattern=u'(?u)\b\w\w+\b',
+                   min_df=0.01,
+                   max_df=0.99
                    str_sub=False,
                    delim=None
                    ):
@@ -28,13 +40,15 @@ def generate_tfidf(str_list,
         str_list = [re.sub(delim, ' ', s) for s in str_list]
     
     vectorizer = fe.text.CountVectorizer(ngram_range=ngram_range,
-                                         token_pattern=token_pattern
+                                         #token_pattern=token_pattern,
+                                         min_df=min_df,
+                                         max_df=max_df
                                          )
     vectorizer_fit = vectorizer.fit(str_list)
     vectorizer_counts = vectorizer.transform(str_list)
 
     if tfidf:
-        transformer = fe.text.TfidfTransformer(use_idf=use_idf)
+        transformer = fe.text.TfidfTransformer(use_idf=True)
         transformer_fit = transformer.fit(vectorizer_counts)
         transformer_tfidf = transformer.transform(vectorizer_counts)
         return transformer_tfidf
@@ -43,7 +57,7 @@ def generate_tfidf(str_list,
         return vectorizer_counts
 
 
-abstr_tfidf = generate_tfidf(nl_abstr['appln_abstr'].values)
+abstr_tfidf = generate_tfidf(nl_all['appln_abstract'])
 ipc_tfidf = generate_tfidf(nl_data['ipc_codes'], str_sub=True, delim='**')
 
 tfidf_union = FeatureUnion(abstr_tfidf, ipc_tfidf)

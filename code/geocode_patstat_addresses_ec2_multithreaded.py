@@ -374,7 +374,7 @@ for f in country_files:
                                          )
     time_start = time.time()
     output = multithreaded_geocode(num_threads=2,
-                                   addresses=df['person_address'].drop_duplicates().values[0:1000],
+                                   addresses=df['person_address'].drop_duplicates().values,
                                    country=long_country,
                                    base_url=base_url,
                                    ec2_instance=this_instance
