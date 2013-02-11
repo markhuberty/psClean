@@ -2,8 +2,23 @@ import pandas as pd
 import modifications as md
 import fuzzy
 
+
+ctry_codes = ['NG', 'KY', 'CN', 'LV', 'CZ', 'ES', 'HU','CH', 'MU',
+              'BE', 'IT', 'LB', 'KZ', 'IN', 'KR', 'HR', 'CY', 'BM',
+              'AT', 'NL', 'PL', 'AZ', 'EE', 'PT', 'TH', 'RU', 'RS',
+              'UA', 'FI', 'NZ', 'SE', 'TN', 'LT', 'MT', 'CL', 'VG',
+              'QA', 'BY', 'MC', 'LI', 'SG', 'GB', 'TW', 'BG', 'MG',
+              'SI', 'LK', 'JE', 'BN', 'BH', 'BR', 'GR', 'IS', 'EG',
+              'ME', 'SK', 'NO', 'IL', 'LU', 'KW', 'CA', 'TR', 'SC',
+              'ZA', 'JO', 'MA', 'BS', 'JP', 'DK', 'AE', 'DE', 'VN',
+              'IM', 'GE', 'RO', 'AU', 'US', 'SA', 'DZ', 'HK', 'MX',
+              'IE', 'FR']
+
+name_in = '/home/ammaserwaah/citl_data/countries/%scode.csv'
+name_out = '/home/ammaserwaah/citl_data/geocoded/%s_citl.csv'
+
 city_df = pd.read_csv('/home/markhuberty/Documents/psClean/data/worldcitiespop.txt')
-city_df = city_df[city_df.Country=='nl'][['City', 'Latitude', 'Longitude', 'Population']]
+city_df = city_df[['City', 'Latitude', 'Longitude', 'Population', 'Country']]
 is_str = [True if isinstance(city, str) else False for city in city_df.City]
 city_df = city_df[is_str]
 city_upper = [city.upper() for city in city_df.City]
@@ -14,16 +29,11 @@ dmeta = fuzzy.DMetaphone(3)
 city_hashes = [dmeta(city)[0] for city in city_df.City]
 city_df['city_hash'] = city_hashes
 
-nl_citl = pd.read_csv('/mnt/db_master/patstat_raw/fleming_inputs/citl_netherlands.csv')
-nl_citl = nl_citl[['accountholder', 'installationidentifier', 'city']]
 
-nl_citl.city = [city.upper() for city in nl_citl.city]
-## Hash the CITL cities too
-nl_citl['city_hash'] = [dmeta(city)[0] for city in nl_citl.city]
 
 ## then geocode
 
-def string_jaccard(str1, strlist, threshold=0.95):
+def string_jaccard(str1, strlist, threshold=0.8):
     set1 = set(list(str1))
     setlist = [list(s) for s in strlist]
 
@@ -77,6 +87,7 @@ def hashed_geocoder(cities, city_list, lat_list, lng_list, hashfun, jaccard_thre
                 lat = lat_list[city_list == n].values[0]
                 lng = lng_list[city_list == n].values[0]
             else:
+    
                 ## Non-exact name match
                 n_candidate = string_jaccard(n,
                                              city_candidates.values,
@@ -107,19 +118,44 @@ def hashed_geocoder(cities, city_list, lat_list, lng_list, hashfun, jaccard_thre
                 lng = lng_list[city_list == n_candidate].values[0]
         lat_lng.append((n, lat, lng))
     return lat_lng
+
+def geocode_country(ctry_citl, city_df, name_out):
                 
-latlng = hashed_geocoder(nl_citl.city,
-                         city_df.City,
-                         city_df.Latitude,
-                         city_df.Longitude,
-                         dmeta,
-                         0.95
+    latlng = hashed_geocoder(ctry_citl.city,
+                             city_df.City,
+                             city_df.Latitude,
+                             city_df.Longitude,
+                             dmeta,
+                             0.8
                          )
 
+    latlng_df = pd.DataFrame(latlng, columns=['name', 'lat', 'lng'])
 
-latlng_df = pd.DataFrame(latlng, columns=['name', 'lat', 'lng'])
+    ctry_citl['Lat'] = latlng_df.lat
+    ctry_citl['Lng'] = latlng_df.lng
 
-nl_citl['Lat'] = latlng_df.lat
-nl_citl['Lng'] = latlng_df.lng
+    ctry_citl.to_csv(name_out, encoding = 'utf8')
 
-nl_citl.to_csv('/mnt/db_master/patstat_raw/fleming_inputs/nl_citl_geocoded.csv')
+    return None
+
+
+
+def country_specific(city_df, ccode, name_in, name_out):
+    name_in = name_in % ccode
+    name_out = name_out % ccode
+    
+    ctry_df = city_df[city_df.Country==ccode.lower()]
+ 
+    ctry_citl = pd.read_csv(name_in)
+    ctry_citl = ctry_citl[['accountholder', 'installationidentifier', 'city']]
+    ctry_citl.city = [city.upper() for city in ctry_citl.city]
+    ctry_citl['city_hash'] = [dmeta(city)[0] for city in ctry_citl.city]
+                              
+    geocode_country(ctry_citl, ctry_df, name_out)
+                              
+    return None
+
+mytest = ['NL']
+geocoded = [ country_specific(city_df, ccode, name_in, name_out) for ccode in ctry_codes]
+
+print 'done!'
