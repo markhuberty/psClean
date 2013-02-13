@@ -29,8 +29,8 @@ def do_all(fullframe):
     colnames  = allcolnames
     criterion = fullframe['Name'].map(lambda x: len(x)>60)
     multinames = fullframe[criterion]
-
-    splitnames = get_multi_names(multinames, colnames) 
+    max_id = max(fullframe.Unique_Record_ID)
+    splitnames = get_multi_names(multinames, colnames, max_id) 
     
     name1 = fullframe.drop(multinames.index.tolist())
     mynames = name1.append(splitnames)
@@ -51,7 +51,7 @@ def split_multi_names(multiname):
         names = [multiname]
     return names
 
-def get_multi_names(myframe, colnames):
+def get_multi_names(myframe, colnames, max_id):
     """ get data frame of split names with associated information """
     all_names = list()    
     for idx in myframe.index.tolist():
@@ -61,7 +61,11 @@ def get_multi_names(myframe, colnames):
         data = [ dict( dd.items()+ [('Name', name)]) for name in names]
     
         all_names += data
+    
     split_names = pd.DataFrame(all_names)
+    max_unique_id = max(myframe.Unique_Record_ID)
+    new_unique_ids = range(max_id + 1, max_id + 1 + split_names.shape[0])
+    split_names['Unique_Record_ID'] = new_unique_ids
     return split_names
          
 
@@ -104,8 +108,8 @@ def do_addresses(myframe, country_code):
             addresses.append(has_address.Address.values[idx])
 
     
-    fung_edit.Name.values[has_address_idx] = names
-    fung_edit.Address.values[has_address_idx] = addresses
+    fung_edit.ix[has_address_idx, "Name"] = names
+    fung_edit.ix[has_address_idx, "Address"] = addresses
     myframe = pd.merge(fung_stay, fung_edit, left_index = True, right_index = True)
 
     end = time.time()
