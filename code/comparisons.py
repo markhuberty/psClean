@@ -8,16 +8,17 @@ from itertools import chain
 import codecs
 
 
-
 ## Generate comparitave statistics for fung, leuven, han disambiguation results
 
 
 os.chdir('/home/Bruegel/patstat_compare')
 
 
-# ## Load and subset appropriate dataframes
-enhanced_person = pandas.read_csv('neth_matched_data', index_col = 'person_id')
-enhanced_person['has_fung'] = enhanced_person['fung_id'].notnull()
+## Load and subset appropriate dataframes
+enhanced_person = pandas.read_csv('fung_leuven_han_matchedFEB', index_col = 'person_id')
+
+
+enhanced_person['has_fung2'] = enhanced_person['fung_id'].notnull()
 enhanced_person['has_han'] = enhanced_person['han_id'].notnull()
 
 # fung_sub = enhanced_person[enhanced_person['has_fung'] == True]
@@ -27,17 +28,21 @@ enhanced_person['has_han'] = enhanced_person['han_id'].notnull()
 # leuven_l2 = fung_sub[fung_sub['leuven_hrm_level'] == 2]
 
 
-#subsets = {'fung': (fung_sub, 0), 'leuven': (fung_sub, 1), 'leuven_l1': (leuven_l1, 1), 'leuven_l2': (leuven_l2, 1)}
-# groupby_tags = ['fung', 'leuven']
 
-# # Gnerate comparative statistics for each grouping
 
-mydata = namedtuple('mydata', 'nuniques average max overaggregate aggregate_count counts duplicates grouping')
-# data_out = pandas.DataFrame(index = subsets.keys(), 
-#                              columns = ['n_uniques', 'max', 'min', 'overaggregate', 'agg_count'])
+# Generate comparative statistics for each grouping
+
+
+mydata = namedtuple('mydata', 
+                    'nuniques average max overaggregate aggregate_count counts duplicates grouping')
+
+
 
 
 def get_important_stats(subset, groupid, otherid):
+    " Take in dataframe and group according to one set of ids,
+    e.g to get uniques of fung2 and count aggregates wrt fung1, 
+    groupid == fung2; otherid == fung1."
     
     grouping = subset.groupby(groupid)
     
@@ -66,6 +71,9 @@ def get_important_stats(subset, groupid, otherid):
 
     return mydata(n_uniques, maximum, average, over, average_non_consolidated, all_counts, non_consolidated, grouping)
 
+
+
+# Some small functions to output data, print random samples etc.
 
 def build_stats_dic():
 
@@ -246,28 +254,3 @@ def name_length_counts():
             i+=1
             names60.set_value(pid, 'flag', 1)
     return i
-
-print 'hey ho!'
-
-
-# start = time.time()
-
-# criterion = fung_sub['person_name'].map(lambda x: x.endswith(' NL'))
-# has_address = fung_sub[criterion]
-# has_address = fung_sub[pandas.isnull(fung_sub['person_address'])]
-# has_address_ids = has_address.index.tolist()
-# has_address['together'] = [ has_address.person_name.ix[pid].split(',') for pid in has_address_ids]
-# has_address['name'] = [ ''.join(has_address.together.ix[pid][0:-2]) for pid in has_address_ids]
-# has_address['address'] = [ has_address.together.ix[pid][-2:] for pid in has_address_ids]
-
-
-# end = time.time()
-
-# runtime = end-start
-
-# print runtime
-
-#for pid in has_address_idx:
-#    name, address = split_address()
-#    fung_sub.set_value(pid, 'person_name')
-#    fung_sub.set_value(pid, 'person_address')
