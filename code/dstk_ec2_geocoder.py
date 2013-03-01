@@ -2,7 +2,6 @@ import Queue
 import boto
 import httplib
 import json
-import os
 import pandas as pd
 import threading
 import time
@@ -189,7 +188,7 @@ class ThreadUrl(threading.Thread):
             self.input_queue.task_done()
 
 ## And wrapper / helper functions
-            def multithreaded_geocode(num_threads,
+def multithreaded_geocode(num_threads,
                           addresses,
                           country,
                           base_url,
@@ -235,7 +234,7 @@ class ThreadUrl(threading.Thread):
                                                     'locality'
                                                     ]
                                            )
-    return(results_df)
+    return results_df
 
 def multithreaded_multiinstance_geocode(num_threads_per_instance,
                                         addresses,
