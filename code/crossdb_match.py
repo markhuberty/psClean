@@ -89,7 +89,8 @@ han_data.columns = ['han_id',
                     ]
 
 
-full_map = pd.merge( leuven_data, fung_map, left_on = 'person_id', right_on = 'person_id', how='outer')
-full_map = pd.merge( han_data, full_map, left_on = 'person_id', right_on = 'person_id', how='outer')
+leuven_map = pd.merge( leuven_data, fung_map, left_on = 'person_id', right_on = 'person_id', how='outer')
+han_map = pd.merge( han_data, fung_map, left_on = 'person_id', right_on = 'person_id', how='outer')
 
-full_map.to_csv('fung_han_leuven_map.csv', index=False)
+leuven_map.to_csv('fung_leuven_map.csv', index=False)
+han_map.to_csv('fung_han_map.csv', index=False)

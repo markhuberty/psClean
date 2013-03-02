@@ -1,19 +1,31 @@
 #!/usr/bin/env
 # -*- coding: utf-8 -*-
+"""
+Processes fung_id:other_id maps and generates aggregation statistics.
+Takes command-line arguments for the maps themselves.
 
+It assumes the command-line arguments come in the following order:
+(1) the fung-han map
+(2) the fung-leuven map
+
+Both should be taken from the output of the crossdb_match.py file.
+
+"""
 
 import pandas as pd
 import os
 import sys
 import numpy as np
 
-input_file = sys.argv[-1]
+fung_han = sys.argv[-1]
+fung_leuven = sys.argv[-2]
 
-df = pd.read_csv(input_file)
+df_han = pd.read_csv(fung_han)
+df_leuven = pd.read_csv(fung_leuven)
 
 def count_summary_stats(id_map):
     map_max = np.max(id_map)
-    map_min = np.max(id_map)
+    map_min = np.min(id_map)
     map_mean = np.mean(id_map)
     map_median = np.median(id_map)
 
@@ -25,10 +37,10 @@ def count_summary_stats(id_map):
     return out
 
 def count_id_maps(df, id1, id2):
-    df.index([id1, id2])
+    this_df = df.set_index([id1, id2])
 
-    grouped1 = df.groupby(level=0)
-    grouped2 = df.groupby(level=1)
+    grouped1 = this_df.groupby(level=0)
+    grouped2 = this_df.groupby(level=1)
 
     id1_id2_map = grouped1.size()
     id2_id1_map = grouped2.size()
@@ -36,7 +48,9 @@ def count_id_maps(df, id1, id2):
     id1_id2_stats = count_summary_stats(id1_id2_map)
     id2_id1_stats = count_summary_stats(id2_id1_map)
 
-    return id1_id2_stats, id2_id1_stats
+    id1_id2 = {'map': id1_id2_map, 'stats': id1_id2_stats}
+    id2_id1 = {'map': id2_id1_map, 'stats': id2_id1_stats}
+    return id1_id2, id2_id1
 
 
 ## TODO: this needs work on exactly what the output will
@@ -47,7 +61,7 @@ def count_id_maps(df, id1, id2):
 ## to do this: aggregate by <id> + person_id, count size.
 ## Then merge on person_id, so now we've got counts for leuven and han.
 ## Then compare. 
-def estimate_precision_recall(df, new_id='fung_id', benchmark_id='leuven_id'):
+def estimate_precision_recall(input_df, new_id='fung_id', benchmark_id='leuven_id'):
     """
     Estimates the precision/recall data compared to the Leuven hand-checked data
     """
@@ -58,10 +72,10 @@ def estimate_precision_recall(df, new_id='fung_id', benchmark_id='leuven_id'):
     ## How many of the person_ids assigned to a single leuven_id do we assign to a single fung_id
     ## How many of the person_ids assigned to a single fung_id to we assign to a single fung_id?
 
-    df_sub = df[[new_id, benchmark_id]].drop_duplicates()
+    input_df_sub = input_df[[new_id, benchmark_id]].drop_duplicates()
     df_sub.reset_index(inplace=True)
-    df.reset_index(inplace=True)
-    df.set_index([new_id, benchmark_id])
+    input_df.reset_index(inplace=True)
+    input_df.set_index([new_id, benchmark_id])
     df_sub.set_index([new_id, benchmark_id])
 
     ## Look at just the IDs:
@@ -82,17 +96,77 @@ def estimate_precision_recall(df, new_id='fung_id', benchmark_id='leuven_id'):
     split_index = new_id_benchmark_id_size.index[new_id_bechmark_id_size > 1]
     clump_index = benchmark_id_new_id_size.index[benchmark_id_new_id_size > 1]
 
-    df.index([new_id, benchmark_id])
+    input_df.index([new_id, benchmark_id])
 
-    df_split = df.ix[split_index]
-    df_clump = df.ix[clump_index]
+    df_split = input_df.ix[split_index]
+    df_clump = input_df.ix[clump_index]
                              
     
 
 ## Get the overall statistics
-fung_han_stats, han_fung_stats = count_id_maps(df, 'fung_id', 'han_id')
-fung_leuven_stats, leuven_fung_stats = count_id_maps(df, 'fung_id', 'leuven_id')
+df_han_idx = df_han[['fung_id', 'han_id']].drop_duplicates()
+df_leuven_idx = df_leuven[['fung_id', 'leuven_id']].drop_duplicates()
+df_leuven_idx_l2 = df_leuven.ix[df_leuven.leuven_ld_level == 2][['fung_id', 'leuven_id']].drop_duplicates()
 
-## Then subset to only the leuven level 2 stats
-df_sub = df[df.leuven_id_level == 2]
-fung_leuven_l2_stats, leuven_fung_l2_stats = count_id_maps(df_sub, 'fung_id', 'leuven_id')
+fung_han_map, han_fung_map = count_id_maps(df_han_idx, 'fung_id', 'han_id')
+fung_leuven_map, leuven_fung_map = count_id_maps(df_leuven_idx_l2, 'fung_id', 'leuven_id')
+fung_leuven_l2_map, leuven_l2_fung_map = count_id_maps(df_leuven_idx_l2, 'fung_id', 'leuven_id')
+
+
+def get_name_by_stat(input_df, idx, map_series, stats, stat_key='max', cols=None):
+    this_id = map_series[map_series == stats[stat_key]].index.values[0]
+    df_out = input_df.ix[input_df[idx] == this_id]
+
+    if cols:
+        df_out = df_out[cols]
+    return df_out
+
+df_max_fl = get_name_by_stat(df_leuven,
+                             'fung_id',
+                             fung_leuven_map['map'],
+                             fung_leuven_map['stats'],
+                             'max',
+                             ['fung_id', 'leuven_id', 'person_name']
+                             )
+
+df_max_lf = get_name_by_stat(df_leuven,
+                             'leuven_id',
+                             leuven_fung_map['map'],
+                             leuven_fung_map['stats'],
+                             'max',
+                             ['fung_id', 'leuven_id', 'person_name']
+                             )
+
+df_max_fl_l2 = get_name_by_stat(df_leuven.ix[df_leuven.leuven_ld_level == 2],
+                                'fung_id',
+                                fung_leuven_l2_map['map'],
+                                fung_leuven_l2_map['stats'],
+                                'max',
+                                ['fung_id', 'leuven_id', 'person_name']
+                                )
+
+df_max_lf_l2 = get_name_by_stat(df_leuven.ix[df_leuven.leuven_ld_level == 2],
+                                'leuven_id',
+                                leuven_l2_fung_map['map'],
+                                leuven_l2_fung_map['stats'],
+                                'max',
+                                ['fung_id', 'leuven_id', 'person_name']
+                                )
+
+df_max_fh = get_name_by_stat(df_han,
+                             'fung_id',
+                             fung_han_map['map'],
+                             fung_han_map['stats'],
+                             'max',
+                             ['fung_id', 'leuven_id', 'person_name']
+                             )
+
+df_max_hf = get_name_by_stat(df_han,
+                             'han_id',
+                             han_fung_map['map'],
+                             han_fung_map['stats'],
+                             'max',
+                             ['fung_id', 'leuven_id', 'person_name']
+                             )
+
+
