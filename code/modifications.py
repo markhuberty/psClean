@@ -259,3 +259,18 @@ def clean_name(name_string, regex_string='[,\.]'):
     out = re.sub(regex_string, '', name_string)
     out = out.strip()
     return out
+
+def sort_class(class_string, class_len=8):
+    """
+    sorts a class string alphabetically by word, keeping only words
+    longer than threshold characters
+    """
+    class_split = class_string.split('**')
+    class_long = [n[:class_len] for n in class_split]
+    if len(class_long) > 0:
+        class_sorted = sorted(set(class_long))
+        out = '**'.join(class_sorted)
+    else:
+        out = ''
+    return out
+

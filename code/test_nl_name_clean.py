@@ -1,7 +1,8 @@
-import pandas as pd
-import time
 import modifications as md
+import numpy as np
+import pandas as pd
 import re
+import time
 
 city_df = pd.read_csv('/home/markhuberty/Documents/psClean/data/worldcitiespop.txt')
 city_df = city_df[city_df.Country=='nl'][['City', 'Latitude', 'Longitude', 'Population']]
@@ -54,6 +55,7 @@ nl_all.columns = ['Patent', 'Person', 'Name', 'Address', 'Country', 'LegalId', '
                   'Class', 'Year', 'Lat', 'Lng', 'Locality', 'Unique_Record_ID'
                   ]
 nl_all.Name.fillna('', inplace=True)
+nl_all.Class.fillna('', inplace=True)
 ## Check for > 1 name in the name field
 
 nl_data = md.do_all(nl_all)
@@ -69,6 +71,7 @@ nl_data.ix[addr_idx, 'Name'] = this_name
 nl_data['Name'] = [md.sort_name(n) for n in nl_data.Name.values]
 nl_data.ix[addr_idx, 'Address'] = this_address
 nl_data['Address'] = [md.clean_name(addr) for addr in nl_data.Address.values]
+nl_data['Class'] = [md.sort_class(cl, 4) for cl in nl_data.Class.values]
 nl_data.ix[addr_idx, "Lat"] = this_lat
 nl_data.ix[addr_idx, "Lng"] = this_lng
 nl_data.ix[addr_idx, "Locality"] = this_locality
@@ -85,6 +88,6 @@ nl_data.Coauthor = remove_commas(nl_data.Coauthor.values)
 nl_data.Name = remove_commas(nl_data.Name.values)
 
 
-nl_data.to_csv('/mnt/db_master/patstat_raw/disambig_input_data/nl_test_data_12Feb2013.csv',
+nl_data.to_csv('/mnt/db_master/patstat_raw/disambig_input_data/nl_test_data_5March2013.csv',
                index=False
                )
