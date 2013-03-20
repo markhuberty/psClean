@@ -19,11 +19,14 @@ import os
 import pandas as pd
 import sys
 
-fung_han = sys.argv[-1]
-fung_leuven = sys.argv[-2]
+def name_matches(id_map, map_name, name_string, max_rows):
+    name_regex = re.compile(name_string)
+    name_bool = [True if name_regex.search(val) else False for val in id_map[map_name].values]
+    id_sub = id_map.ix(name_bool)
 
-df_han = pd.read_csv(fung_han)
-df_leuven = pd.read_csv(fung_leuven)
+    if max_rows:
+        id_sub = id_sub[:max_rows]
+    return id_sub.drop_duplicates()
 
 def count_summary_stats(id_map):
     """
@@ -61,6 +64,13 @@ def count_id_maps(df, id1, id2):
     id1_id2 = {'map': id1_id2_map, 'stats': id1_id2_stats}
     id2_id1 = {'map': id2_id1_map, 'stats': id2_id1_stats}
     return id1_id2, id2_id1
+
+
+fung_han = sys.argv[-1]
+fung_leuven = sys.argv[-2]
+
+df_han = pd.read_csv(fung_han)
+df_leuven = pd.read_csv(fung_leuven)
 
 
 ## Get the overall statistics
@@ -156,3 +166,6 @@ df_max_hf = get_name_by_stat(df_han,
                              )
 df_max_hf.to_csv('han_fung_max.csv', index=False)
 
+## Get some Akzo data
+# akzo_leuven_df = name_matches(df_leuven, 'name', 'AKZO')
+# akzo_han_df = name_matches(df_han, 'han_name', 'AKZO')
