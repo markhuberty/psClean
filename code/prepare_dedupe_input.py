@@ -1,10 +1,11 @@
+import AsciiDammit
+import consolidate_df as cd
 import modifications as md
 import numpy as np
-import re
-import time
 import os
 import pandas as pd
-import AsciiDammit
+import re
+import time
 
 
 file_list = os.listdir()
@@ -66,14 +67,14 @@ for f in files:
                            )
     
     # Consolidate the records at the person_id level
-    consolidate_dict = {'Name': patent_util.consolidate_unique,
-                        'Lat': patent_util.consolidate_geo,
-                        'Lng': patent_util.consolidate_geo,
-                        'Class': patent_util.consolidate_set,
-                        'Coauthor': patent_util.consolidate_set
+    consolidate_dict = {'Name': cd.consolidate_unique,
+                        'Lat': cd.consolidate_geo,
+                        'Lng': cd.consolidate_geo,
+                        'Class': cd.consolidate_set,
+                        'Coauthor': cd.consolidate_set
                         }
 
-    df_consolidated = md.consolidate(df_temp, 'Person', consolidate_dict)
+    df_consolidated = cd.consolidate(df_temp, 'Person', consolidate_dict)
 
     # Write out
     f_out = 'dedupe_input_' + country + '.csv'
