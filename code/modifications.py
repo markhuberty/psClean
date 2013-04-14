@@ -8,6 +8,7 @@
 import time
 import pandas as pd
 import re
+import AsciiDammit
 
 def str_findall(strng, val):
     idx = [m.start() for m in re.finditer(val, strng)]
@@ -267,10 +268,36 @@ def sort_class(class_string, class_len=8):
     """
     class_split = class_string.split('**')
     class_long = [n[:class_len] for n in class_split]
+    class_lower = [n.lower() for n in class_long]
     if len(class_long) > 0:
-        class_sorted = sorted(set(class_long))
+        class_sorted = sorted(set(class_lower))
         out = '**'.join(class_sorted)
     else:
         out = ''
+    return out
+
+def city_popmax(g):
+    this_country = g.index[0][0]
+    g_city = g['City']
+    maxpop_idx = np.argmax(g_city['Population'])
+    this_data = g_city.xs(maxpop_idx)
+    return this_country, this_data['City'], this_data['Latitude'], this_data['Longitude']
+
+def build_city_dict(city_df):
+    is_str = [True if isinstance(city, str) else False for city in city_df.City]
+    city_df = city_df[is_str]
+    city_lower = [city.lower() for city in city_df.City.values]
+    city_df.City = city_lower
+
+    # filter the cities by population and take the maxpop
+    city_grouped = city_df.groupby(['Country', 'City'])
+    countries, cities, lats, lngs = build_city_dict(city_grouped)
+    out = {}
+    for country, city, lat, lng in zip(countries, cities, lats, lngs):
+        if country in out:
+            out[country][city] = (lat, lng)
+        else:
+            out[country] = {}
+            out[country][city] = (lat, lng)
     return out
 
