@@ -7,6 +7,7 @@ import pandas as pd
 import re
 import time
 import csv
+import fuzzy_geocoder
 
 source_dir = '/mnt/db_master/patstat_raw/fleming_inputs/'
 re_file = re.compile('cleaned_output_[A-Z]{2}.tsv$')
@@ -16,19 +17,7 @@ file_header = ['', 'appln_id','person_id','person_name','person_address','person
 dtypes = [np.int32, np.int32, np.int32, object, object, object, object, object, object, np.int32]
 typedict = dict(zip(file_header, dtypes))
 
-city_latlong = 'city_latlong.csv'
-def read_city_latlong_dict(filename):
-    country_dict = {}
-    with open(filename, 'rt') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row['Country'] in country_dict:
-                country_dict[row['Country']][row['City']] = (row['Lat'], row['Lng'])
-            else:
-                country_dict[row['Country']] = {}
-                country_dict[row['Country']][row['City']] = (row['Lat'], row['Lng'])
-    return country_dict
-global_city_dict = read_city_latlong_dict(city_latlong)
+city_latlong = pd.read_csv('city_latlong.csv')
 
     
 for f in files:
