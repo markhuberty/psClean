@@ -8,7 +8,7 @@ import threading
 import time
 import urllib
 import urllib2
-from import dstk_ec2_geocoder import *
+from dstk_ec2_geocoder import *
 
 ## Set the directory root and dstk URL
 os.chdir('/home/markhuberty/Documents/psClean/')
@@ -68,24 +68,25 @@ iso_codes = pd.read_csv('./data/iso_country_code_names.txt', sep=';',
 iso_codes['country_code'][iso_codes['country_name']=='NAMIBIA'] = 'NA'
 
 ## Walk across the files and geocode non-blank addresses
-datadir = './data/cleaned_data'
+datadir = '/mnt/db_master/patstat_raw/fleming_inputs/'
+#datadir = './data/cleaned_data'
 country_files = os.listdir(datadir) ## fix this
-country_files = [f for f in country_files if 'cleaned_output_NL' in f
-                 and 'geocoded' not in f
-                 ]
+country_files = [f for f in country_files if f == 'cleaned_output_DE.tsv']
     
 
 for f in country_files:
     fname = datadir + '/' + f
-    df = pd.read_csv(fname)
+    df = pd.read_csv(fname, sep='\t')
+    df = df[['person_id', 'person_address', 'person_ctry_code']].dropna().drop_duplicates()
     this_country = df['person_ctry_code'].values[0]
     long_country = short_to_long_country(this_country,
                                          iso_codes['country_code'],
                                          iso_codes['country_name']
                                          )
+    addresses = df['person_address'].drop_duplicates().values
     time_start = time.time()
     output = multithreaded_geocode(num_threads=2,
-                                   addresses=df['person_address'].drop_duplicates().values,
+                                   addresses=addresses,
                                    country=long_country,
                                    base_url=base_url,
                                    ec2_instance=this_instance
@@ -95,7 +96,7 @@ for f in country_files:
     print 'Elapsed time: %s' % str(elapsed_time)
     df = pd.merge(df, output, on='person_address', how='left')
     output_fname = datadir + '/geocoded_' + f
-    df.to_csv(output_fname)
+    df.to_csv(output_fname, cols=['person_id', 'person_address'])
 
 ec2.terminate_instances(instance_ids=[r.instances[0].id])
 

@@ -151,7 +151,7 @@ class ThreadUrl(threading.Thread):
                     addr = address + ' ' + self.country
                     encoded_address = self.encode_address(addr)
 
-                    this_url = base_url + '%s' % encoded_address
+                    this_url = self.base_url + '%s' % encoded_address
                     #print this_url
 
                     result = self.retrieve_url(this_url, 5, ec2_instance, server_status_event)
@@ -201,7 +201,8 @@ def multithreaded_geocode(num_threads,
     output_queue = Queue.Queue()
     server_status_event = threading.Event()
     
-    #spawn a pool of threads, and pass them queue instance 
+    #spawn a pool of threads, and pass them queue instance
+    print 'Generating threads'
     for i in range(num_threads):
         t = ThreadUrl(input_queue=input_queue,
                       output_queue=output_queue,
@@ -213,7 +214,8 @@ def multithreaded_geocode(num_threads,
         t.setDaemon(True)
         t.start()
               
-    #populate queue with data   
+    #populate queue with data
+    print 'Populating queue'
     for address in addresses:
         input_queue.put(address)
     

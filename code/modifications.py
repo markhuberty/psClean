@@ -9,6 +9,7 @@ import time
 import pandas as pd
 import re
 import AsciiDammit
+import numpy as np
 
 def str_findall(strng, val):
     idx = [m.start() for m in re.finditer(val, strng)]
@@ -276,28 +277,11 @@ def sort_class(class_string, class_len=8):
         out = ''
     return out
 
-def city_popmax(g):
-    this_country = g.index[0][0]
-    g_city = g['City']
-    maxpop_idx = np.argmax(g_city['Population'])
-    this_data = g_city.xs(maxpop_idx)
-    return this_country, this_data['City'], this_data['Latitude'], this_data['Longitude']
+re_multispace = re.compile('\s+')
+re_comma = re.compile('[,\.]')
 
-def build_city_dict(city_df):
-    is_str = [True if isinstance(city, str) else False for city in city_df.City]
-    city_df = city_df[is_str]
-    city_lower = [city.lower() for city in city_df.City.values]
-    city_df.City = city_lower
-
-    # filter the cities by population and take the maxpop
-    city_grouped = city_df.groupby(['Country', 'City'])
-    countries, cities, lats, lngs = build_city_dict(city_grouped)
-    out = {}
-    for country, city, lat, lng in zip(countries, cities, lats, lngs):
-        if country in out:
-            out[country][city] = (lat, lng)
-        else:
-            out[country] = {}
-            out[country][city] = (lat, lng)
+def asciidammit(ser):
+    out = [AsciiDammit.asciiDammit(s) if isinstance(s, str) else '' for s in ser]
+    out = [re_comma.sub(' ', s) for s in out]
+    out = [re_multispace.sub(' ', s) for s in out]
     return out
-

@@ -1,4 +1,6 @@
 import pandas as pd
+import operator
+import random
 
 def consolidate_unique(x):
     return x.values[0]
