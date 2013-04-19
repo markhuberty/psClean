@@ -10,6 +10,8 @@
 import pandas as pd
 import Levenshtein
 import re
+import time
+import numpy as np
 
 def address_geocoder(addresses, city_df, threshold, hashfun):
     city_df.city_hash = [hashfun(c)[0] for c in city_df.cities]
@@ -46,6 +48,7 @@ def simple_address_check(addr, city_df):
 
 
 def fuzzy_address_check(addr, city_df, hashfun, j_threshold):
+
     city_df.set_index('city_hash', inplace=True)
     hashed_addr = [hashfun(w)[0] for w in addr]
     hashzip = zip(addr, hashed_addr)
@@ -69,14 +72,15 @@ def fuzzy_address_check(addr, city_df, hashfun, j_threshold):
 
 
 def fuzzy_city_check(addr, city_df, hashfun, j_threshold):
+    start_time = time.time()
     addr = re.sub('^[0-9]+|[0-9]+$', '', addr)
     split_addr = re.split('[0-9]+', addr)
     city_chunk = re.sub('[0-9]+', '', split_addr[-1]).strip()
     addr_candidates = city_chunk.split(' ')
     hashed_addr = [hashfun(w)[0] for w in addr_candidates]
-    print hashed_addr
+    #print hashed_addr
     sub_df = city_df[city_df.city_hash.isin(hashed_addr)]
-    print sub_df.shape
+    #print sub_df.shape
 
     if sub_df.shape[0] > 0:
         city_match = search_city(sub_df.city.values,
@@ -93,17 +97,23 @@ def fuzzy_city_check(addr, city_df, hashfun, j_threshold):
             out = [None] * 3
     else:
         out = [None] * 3
+    #print time.time() - start_time
     return out 
 
 def search_city(cities, addr_string, threshold):
     sims = [Levenshtein.ratio(addr_string, c) for c in cities]
-    sorted_cities = zip(sims, cities)
-    sorted_cities.sort()
-    if sorted_cities[-1][0] > threshold:
-        print sorted_cities[-1]
-        return sorted_cities[-1][1]
+    max_idx = np.argmax(sims)
+    if sims[max_idx] >= threshold:
+        return cities[max_idx]
     else:
         return None
+    # sorted_cities = zip(sims, cities)
+    # sorted_cities.sort()
+    # if sorted_cities[-1][0] > threshold:
+    #     print sorted_cities[-1]
+    #     return sorted_cities[-1][1]
+    # else:
+    #     return None
     
 
 def string_jaccard(str1, strlist, threshold=0.95):
