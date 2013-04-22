@@ -46,20 +46,44 @@ df = pd.merge(df, addr_df, on='person_address', how='left')
 
 # Then locate addresses we don't have, and check names for
 # embedded address information
-idx_without_addresses = [True if l is None else False for l in df.lat]
-names_without_addresses = df.person_name.ix[idx_without_addresses]
+df_name_addr = df[['person_name', 'person_address', 'lat']].drop_duplicates()
+bool_without_addresses = np.logical_or(np.isnan(df_name_addr.lat), np.equal(df_name_addr.lat, None))
+names_without_addresses = df_name_addr.person_name[bool_without_addresses].dropna().drop_duplicates()
+names_without_addresses = [re.sub('A14', 'U', n) for n in names_without_addresses]
+names_without_addresses = [n for n in names_without_addresses if nap.filter_name(n)]
 geocoded_names = []
 name_fields = ['name', 'clean_name', 'locale', 'lat', 'lng']
 
-for n in names_without_addresses:
-    name, address = nap.parse_name(n)
-    if address:
-        gl = fuzzy_geocoder.fuzzy_city_check(address.lower(), city_latlong_de, dmeta, 0.5)
-        name_locale = [n, name].extend(gl)
-        d_locale = dict(zip(name_fields, name_locale))
-        geocoded_names.append(d_locale)
+start_time = time.time()
+incr_time = start_time
+for idx, n in enumerate(names_without_addresses):
+    if isinstance(n, str):
+        if idx > 0 and idx % 1000 == 0:
+            print idx
+            print (time.time() - start_time) / idx
+            print (time.time() - incr_time) / 1000
+            incr_time = time.time()
+
+        name, address = nap.parse_name(n)
+        
+        if address:
+            gl = fuzzy_geocoder.fuzzy_city_check(address.lower(), city_latlong_de, dmeta, 0.5)
+            name_locale = [n, name]
+            name_locale.extend(gl)
+            d_locale = dict(zip(name_fields, name_locale))
+            geocoded_names.append(d_locale)
 
 name_addr_df = pd.DataFrame(geocoded_names)
 df = pd.merge(df, name_addr_df, left_on='person_name', right_on='name', how='left')
+lat = [l[0] if np.isnan(l[1]) else l[1] for l in zip(df.lat_x, df.lat_y)]
+lng = [l[0] if np.isnan(l[1]) else l[1] for l in zip(df.lng_x, df.lng_y)]
+locale = [l[0] if isinstance(l[0], str) else l[1] for l in zip(df.locale_x, df.locale_y)]
 
-df.to_csv('geocoded_de_data.csv', index=False)
+df = df[['appln_id', 'person_id', 'person_name', 'person_address',
+         'person_ctry_code', 'coauthors', 'ipc_code', 'year', 'clean_name']
+        ]
+df['lat'] = lat
+df['lng'] = lng
+df['locale'] = locale
+df.to_csv('geocoded_de_data_2.csv', index=False)
+
