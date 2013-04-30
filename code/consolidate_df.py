@@ -8,7 +8,10 @@ def consolidate_unique(x):
 def consolidate_geo(x):
     geo_counts = {}
     for g in x.values:
-        g = float(g)
+        try:
+            g = float(g)
+        except TypeError:
+            g = 0.0
         if g != 0.0:
             if g in geo_counts:
                 geo_counts[g] += 1
