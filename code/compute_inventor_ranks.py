@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy.stats import spearmanr, pearsonr
+import sys
 
 
 def consolidate_unique(ser):
@@ -87,7 +88,7 @@ def compute_canonical_counts(df_ref, df_p, ref_cluster='leuven_id', d_cluster='c
                    how='left'
                    )
 
-    return out[[ref_cluster, d_cluster, 'dedupe_ct', 'leuven_ct']]
+    return out[[ref_cluster, d_cluster, 'dedupe_ct', 'ref_ct']]
 
 
 eu27 = ['at',
@@ -129,12 +130,15 @@ cids = []
 countries = []
 
 for country in eu27:
-    root_dir = '/home/markhuberty/Downloads/' + country
-    df_leuven = pd.read_csv(output_dir + 'dedupe_leuven_map.csv')
-    df_patent = pd.read_csv(patent_dir + country + '_person_patent_map.csv')
-    df_input = pd.read_csv(person_dir + 'dedupe_input_' + country + '.csv')
-    df_input = df_input[['Person', 'Name']]
 
+    try:
+        df_leuven = pd.read_csv(output_dir + country + '/' + 'dedupe_leuven_map.csv')
+        df_patent = pd.read_csv(patent_dir + country + '_person_patent_map.csv')
+        df_input = pd.read_csv(person_dir + 'dedupe_input_' + country + '.csv')
+    except:
+        continue
+
+    df_input = df_input[['Person', 'Name']]
     df_leuven = df_leuven.dropna()
 
     df_leuven_patent = pd.merge(df_leuven,
@@ -170,11 +174,11 @@ for country in eu27:
                                          d_cluster='cluster_id_r2'
                                          )
 
-    d1_spearman = spearmanr(leuven_d1.leuven_ct, leuven_d1.dedupe_ct)
-    d1_pearson = pearsonr(leuven_d1.leuven_ct, leuven_d1.dedupe_ct)
+    d1_spearman = spearmanr(leuven_d1.ref_ct, leuven_d1.dedupe_ct)
+    d1_pearson = pearsonr(leuven_d1.ref_ct, leuven_d1.dedupe_ct)
 
-    d2_spearman = spearmanr(leuven_d2.leuven_ct, leuven_d2.dedupe_ct)
-    d2_pearson = pearsonr(leuven_d2.leuven_ct, leuven_d2.dedupe_ct)
+    d2_spearman = spearmanr(leuven_d2.ref_ct, leuven_d2.dedupe_ct)
+    d2_pearson = pearsonr(leuven_d2.ref_ct, leuven_d2.dedupe_ct)
 
     pearsons.append(d1_pearson)
     spearmans.append(d1_spearman)
@@ -186,10 +190,10 @@ for country in eu27:
     cids.append('round2')
     countries.append(country)
 
-    d1_output_file = output_dir + 'dedupe_leuven_patent_counts_r1.csv'
+    d1_output_file = output_dir + country + '/dedupe_leuven_patent_counts_r1.csv'
     leuven_d1.to_csv(d1_output_file)
 
-    d2_output_file = output_dir + 'dedupe_leuven_patent_counts_r2.csv'
+    d2_output_file = output_dir + country + 'dedupe_leuven_patent_counts_r2.csv'
     leuven_d2.to_csv(d2_output_file)
 
     print 'finished with %s' % country
