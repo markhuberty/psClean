@@ -15,9 +15,9 @@ def consolidate_unique(ser):
         return g_ser.index[-1]
     return ser[0]
 
-def consolidate_df(df, col='patent_ct'):
-    idx = df.index[np.argmax(df[col])]
-    return df.ix[idx]
+# def consolidate_df(df, col='patent_ct'):
+#     idx = df.index[np.argmax(df[col])]
+#     return df.ix[idx]
 
 
 # def consolidate_record_counts(df_id_patent, cluster_id='cluster_id_r1'):
@@ -58,13 +58,14 @@ def compute_canonical_counts(df_ref, df_p, ref_cluster='leuven_id', d_cluster='c
     name_patent_size.columns = [ref_cluster, d_cluster, 'patent_ct']
     
     g_name_patent_size = name_patent_size.groupby(ref_cluster)
-    canonical_ids = g_name_patent_size.agg(consolidate_df) ## contains the canonical id maps
-    canonical_ids.reset_index(inplace=True)
+    canonical_ids = g_name_patent_size.apply(lambda t: t[t.patent_ct==t.patent_ct.max()].irow(0))
+    canonical_ids.reset_index(inplace=True, drop=True)
     
     # Then reverse: consolidate the output by dedupe ID, again picking the largest
     # number of patents
-    final_id_counts = canonical_ids.groupby(d_cluster).agg(consolidate_df)
-    final_id_counts.reset_index(inplace=True)
+    g_canonical_ids = canonical_ids.groupby(d_cluster)
+    final_id_counts = g_canonical_ids.apply(lambda t: t[t.patent_ct==t.patent_ct.max()].irow(0))
+    final_id_counts.reset_index(inplace=True, drop=True)
 
     # Then add on the actual patent counts by dedupe and leuven id
     dedupe_size = df_leuven_patent.groupby(d_cluster).size()
