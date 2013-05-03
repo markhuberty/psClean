@@ -24,6 +24,7 @@ import time
 import sys
 import pandas as pd
 import math
+import datetime
 sys.path.append('/home/markhuberty/Documents/dedupe/examples/patent_example')
 
 ## Load up local libraries
