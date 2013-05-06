@@ -194,7 +194,7 @@ for country in eu27:
     d1_output_file = output_dir + country + '/dedupe_leuven_patent_counts_r1.csv'
     leuven_d1.to_csv(d1_output_file)
 
-    d2_output_file = output_dir + country + 'dedupe_leuven_patent_counts_r2.csv'
+    d2_output_file = output_dir + country + '/dedupe_leuven_patent_counts_r2.csv'
     leuven_d2.to_csv(d2_output_file)
 
     print 'finished with %s' % country
