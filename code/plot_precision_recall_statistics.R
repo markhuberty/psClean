@@ -145,12 +145,23 @@ ggsave(plot.pr,
        height=8
        )
 
-names(df.pr) <- c("Country", "ID precision", "ID recall", "Patent precision",
-                  "Patent recall", "L2 patent precision", "L2 patent recall"
+
+df.pr <- df.pr[df.pr$cluster_label == "cluster_id_r1",]
+df.pr <- df.pr[,-2]
+
+# assumes be, it, fr, es, nl, dk, fi
+r.weight <- "(1, 2.5)"
+p.weight <- "(0.5, 1.5)"
+weights.vec <- c(r.weight, p.weight, p.weight, p.weight, r.weight, r.weight, r.weight)
+
+df.pr$pr.wt <- weights.vec
+names(df.pr) <- c("Country", "ID precision", "ID recall", "L1 patent precision",
+                  "L1 patent recall", "L2 patent precision", "L2 patent recall", "Precision-Recall weights"
                   )
+
 tab.pr <- xtable(df.pr,
                  label="tab:pr",
-                 caption="Precision and recall results by country for the \\texttt{dedupe} output. ID values are computed relative to the Leuven Level 2 IDs in each country. Patent data are computed for both the level 1 and level 2 data."
+                 caption="Precision and recall results by country for the \\texttt{dedupe} output. ID values measure the person-level performance, relative to hand-matched Leuven Level 2 results. Patent data measure the accuracy of assignment of patents to unique individuals. Results are shown for comparison with both the Leuven level 1 (L1) and hand-matched level 2 (L2) datasets. Precision-recall weights refer to the settings used for rounds 1 and 2 of disambiguation for each country."
                  )
 print(tab.pr,
       file="./tables/tab_precision_recall.tex",
