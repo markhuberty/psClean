@@ -38,6 +38,14 @@ eu27 = ['at',
         'el',
         ]
 
+def jaccard(s1, s2):
+    s1 = set(s1.split(' '))
+    s2 = set(s2.split(' '))
+    numer = s1.intersect(s2)
+    denom = s1.union(s2)
+    return len(numer) / float(len(denom))
+
+n_matches = 3
 all_record_matches = []
 for country in eu27:
     try:
@@ -63,13 +71,18 @@ for country in eu27:
         record_dist = []
         for patstat_record in patstat_iter:
             if isinstance(patstat_record[0], str):
-                name_dist = Levenshtein.ratio(citl_record[0].lower(),
-                                              patstat_record[0].lower()
-                                              )
+                lev_name_dist = Levenshtein.ratio(citl_record[0].lower(),
+                                                  patstat_record[0].lower()
+                                                  )
+                jac_name_dist = jaccard(citl_record[0].lower(),
+                                        patstat_record[0].lower()
+                                        )
                 
             else:
                 continue
-            name_dist = 1 - name_dist
+            ## Convert from similarities to distances
+            lev_name_dist = 1 - lev_name_dist
+            jac_name_dist = 1 - jac_name_dist
 
             geo_dist = None
             if citl_record[1] != 0.0 and patstat_record[1] != 0.0:
@@ -87,12 +100,15 @@ for country in eu27:
                                     geo_dist
                                     )
                                    )
-        sorted_dist = sorted(record_dist, key=lambda x: (x[2], x[3]))
-        
-        citl_match = list(sorted_dist[0])
+
+        # Sort on name distance first, then geo distance
+        sorted_dist = sorted(record_dist, key=lambda x: (x[2], x[3], x[4]))
+
+        # Take the top N so we can filter for later
+        citl_match = sorted_dist[:n_matches]
         citl_match.append(country)
         
-        country_record_matches.append(tuple(citl_match))
+        country_record_matches.extend(citl_match)
 
     all_record_matches.extend(country_record_matches)
     end_time = time.time()
@@ -103,70 +119,3 @@ df_out = pd.DataFrame(all_record_matches,
                       columns=['citl_name', 'patstat_name', 'name_dist', 'geo_dist', 'country']
                       )
 df_out.to_csv('citl_patstat_matches.csv', index=False)
-# # Now given the data, train a classifier and predict.
-# (citl_names, patstat_names, ldist, gdist) = zip(*[r for r in record_matches])
-
-# def label_matches(r1, r2, d1, d2):
-#     labels = []
-#     d1_lab = []
-#     d2_lab = []
-
-#     counter = 0
-#     idx_shuffle = np.random.shuffle
-#     for name1, name2, dist1, dist2 in zip(r1, r2, d1, d2):
-
-#         label = None
-#         while label not in ['y', 'n', 'f']:
-#             label = raw_input('Does %s match %s?' % (name1, name2))
-
-#         if label=="f":
-#             break
-
-#         if label=="y":
-#             labels.append(1)
-#         else:
-#             labels.append(0)
-#         d1_lab.append(dist1)
-#         d2_lab.append(dist2)
-#         counter += 1
-#         print '%i records labeled' % counter
-
-#     return labels, d1_lab, d2_lab
-
-# is_match, name_dist, geo_dist = label_matches(citl_names, patstat_names, ldist, gdist)
-
-# from sklearn.naive_bayes import MultinomialNB
-# import numpy as np
-# from sklearn import cross_validation as cv
-
-# mnb = MultinomialNB()
-
-# name_dist_mean = np.mean(name_dist)
-# geo_dist_mean = np.mean(geo_dist)
-
-# name_dist_imp = [n if n else name_dist_mean for n in name_dist]
-# geo_dist_imp = [g if g else geo_dist_mean for g in geo_dist]
-
-# df_in = np.array([name_dist_imp, geo_dist_imp]).transpose()
-
-# mnb_fit = mnb.fit(df_in, np.array(is_match))
-# mnb_score = cv.cross_val_score(mnb, df_in, np.array(is_match),cv=10)
-# p = mnb_fit.predict(df_in)
-
-# from sklearn.svm import SVC
-# svc = SVC()
-# svc_fit = svc.fit(df_in, np.array(is_match))
-# svc_pred = svc_fit.predict(df_in)
-# svc_score = cv.cross_val_score(svc, df_in, np.array(is_match), cv=10)
-
-# ldist_imp = [n if n else name_dist_mean for n in ldist]
-# gdist_imp = [g if g and not np.isnan(g) else geo_dist_mean for g in gdist]
-
-# df_pred = np.array([ldist_imp, gdist_imp]).transpose()
-
-# lab_pred = svc_fit.predict(df_pred)
-
-# matches = []
-# for idx, l in enumerate(lab_pred):
-#     if l == 1:
-#         matches.append(record_matches[idx])
