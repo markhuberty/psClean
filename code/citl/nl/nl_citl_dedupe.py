@@ -16,10 +16,14 @@ import re
 import collections
 import logging
 import optparse
-import patent_util # Custom
+#import patent_util # Custom
+import sys
+sys.path.append('/home/markhuberty/Documents/dedupe/examples/patent_example')
 import AsciiDammit
+from patent_util import preProcess
 import pandas as pd
 
+import numpy as np
 import dedupe
 
 def readDataFrame(df, set_delim='**'):
@@ -44,12 +48,13 @@ def readDataFrame(df, set_delim='**'):
     for idx, dfrow in df.iterrows():
         # print type(dfrow)
         row_out = {}
-        if isinstance(dfrow['Name'], str):
-            name = preProcess(dfrow['Name'])
+        if isinstance(dfrow['name'], str):
+            name = preProcess(dfrow['name'])
         else:
             name = ''
-        row_out['LatLong'] = (float(dfrow['Lat']), float(dfrow['Lng']))
-        row_out['Name'] = name
+        row_out['latlong'] = (float(dfrow['lat']), float(dfrow['lng']))
+        row_out['name'] = name
+        #row_out['source'] = dfrow['source']
         row_tuple = [(k, v) for (k, v) in row_out.items()]
         data_d[idx] = dedupe.core.frozendict(row_tuple)
             
@@ -76,12 +81,31 @@ logging.basicConfig(level=log_level)
 # ## Setup
 
 # Define input, output, and training file options
-country = = 'nl'
-input_file = country + '_dedupe_citl.csv'
+country = 'nl'
+input_file = country + '_citl_input.csv'
 output_file = country + '_citl_out.csv'
 settings_file = country + '_citl_learned_settings'
 training_file = country + 'citl_training.json'
 
+import random
+def generateTrainingSamples(d, n_pairs=1000):
+    citl_records = dict((record, d[record]) for record in d if d[record]['source']=='citl')
+    patstat_records = dict((record, d[record]) for record in d if d[record]['source']=='patstat')
+
+    citl_idx = np.random.choice(citl_records.keys(), n_pairs, replace=True)
+    patstat_idx = np.random.choice(patstat_records.keys(), n_pairs, replace=True)
+
+    citl_sample = [(idx, citl_records[idx]) for idx in citl_idx] 
+    patstat_sample = [(idx, patstat_records[idx]) for idx in patstat_idx]
+
+    citl_shuffle = random.sample(citl_sample, n_pairs / 10)
+    patstat_shuffle = random.sample(patstat_sample, n_pairs / 10)
+
+    left_sample = citl_sample + citl_shuffle + patstat_shuffle
+    right_sample = patstat_sample + citl_sample[:len(citl_shuffle)] + patstat_sample[:len(patstat_shuffle)]
+
+    out = zip(right_sample, left_sample)
+    return out
 
 # Dedupe can take custom field comparison functions, here's one
 # we'll use for zipcodes
@@ -94,7 +118,7 @@ def sameOrNotComparator(field_1, field_2) :
 print 'importing data ...'
 input_df = pd.read_csv(input_file)
 data_d = readDataFrame(input_df)
-citl_keys = [k for k in data_d if data_d[k]['source']=='citl']
+
 
 # ## Training
 
@@ -111,8 +135,7 @@ else:
 
     fields = {
         'name': {'type': 'String'},
-        'latlong': {'type': 'LatLong', 'Has Missing': True},
-        'source': {'type': 'Custom', 'comparator': sameOrNotComparator}
+        'latlong': {'type': 'LatLong', 'Has Missing': True}
         }
 
     # Create a new deduper object and pass our data model to it.
@@ -136,7 +159,7 @@ else:
     print 'starting active labeling...'
     deduper.train(data_sample, dedupe.training.consoleLabel)
 
-    # When finished, save our training away to disk
+# When finished, save our training away to disk
     deduper.writeTraining(training_file)
 
 # ## Blocking
@@ -144,7 +167,7 @@ else:
 print 'blocking...'
 # Initialize our blocker. We'll learn our blocking rules if we haven't
 # loaded them from a saved settings file.
-blocker = deduper.blockingFunction(ppc=0.01, uncovered_dupes=5)
+blocker = deduper.blockingFunction(ppc=0.001, uncovered_dupes=5)
 
 # Save our weights and predicates to disk.  If the settings file
 # exists, we will skip all the training and learning next time we run

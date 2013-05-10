@@ -79,13 +79,13 @@ for f in files:
 
 ## First geocode all the addresses that we have
         geocoded_locales = []
-        city_latlong_de = city_latlong[city_latlong.country == 'be']
+        #city_latlong_de = city_latlong[city_latlong.country == 'be']
         start_time = time.time()
         for idx, addr in enumerate(clean_addresses):
             if idx > 0 and idx % 1000 == 0:
                 print idx
                 print (time.time() - start_time) / idx
-            gl = fuzzy_geocoder.fuzzy_city_check(addr.lower(), city_latlong_de, dmeta, 0.5)
+            gl = fuzzy_geocoder.fuzzy_city_check(addr.lower(), country_latlong, dmeta, 0.5)
             geocoded_locales.append(gl)
     
         locales = [g[0] for g in geocoded_locales]
@@ -125,7 +125,7 @@ for f in files:
             name, address = nap.parse_name(n)
         
             if address:
-                gl = fuzzy_geocoder.fuzzy_city_check(address.lower(), city_latlong_de, dmeta, 0.5)
+                gl = fuzzy_geocoder.fuzzy_city_check(address.lower(), country_latlong, dmeta, 0.5)
                 name_locale = [n, name]
                 name_locale.extend(gl)
                 d_locale = dict(zip(name_fields, name_locale))
