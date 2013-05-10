@@ -1,11 +1,25 @@
 import Levenshtein
 from dedupe.distance import haversine
 import pandas as pd
+import re
+import string
+import fuzzy
 
-from IPython.parallel import Client
+def jaccard(s1, s2):
+    numer = s1.intersection(s2)
+    denom = s1.union(s2)
+    return len(numer) / float(len(denom))
 
-rc = Client()
-dview = rc[:]
+re_punct = re.compile('[%s]' % re.escape(string.punctuation))
+def clean_name(n):
+    n = re_punct.sub(' ', n)
+    n = re.sub('\s{2,}', ' ', n)
+    n = n.strip().lower()
+    return n
+
+dmeta_hash = fuzzy.DMetaphone(4)
+def namehash(n, hashfun):
+    return hashfun(n)[0]
 
 citl_file_root = './%s/%s_citl_input.csv' 
 
@@ -38,12 +52,6 @@ eu27 = ['at',
         'el',
         ]
 
-def jaccard(s1, s2):
-    s1 = set(s1.split(' '))
-    s2 = set(s2.split(' '))
-    numer = s1.intersect(s2)
-    denom = s1.union(s2)
-    return len(numer) / float(len(denom))
 
 n_matches = 3
 all_record_matches = []
@@ -56,11 +64,17 @@ for country in eu27:
     print country
     input_df.name.fillna('')
 
+    input_df['name'] = [clean_name(n) if isinstance(n, str) else None for n in input_df.name]
+    input_df['namehash'] = [namehash(n, dmeta_hash) if isinstance(n, str) else None for n in input_df.name]
+    input_df['name_split'] = [set(s.split(' ')) if isinstance(s, str) else None
+                              for s in input_df.name
+                              ]
+
     citl = input_df[input_df.source == 'citl']
     patstat = input_df[input_df.source == 'patstat']
 
-    citl_iter = zip(citl.name, citl.lat, citl.lng)
-    patstat_iter = zip(patstat.name, patstat.lat, patstat.lng)
+    citl_iter = zip(citl.name, citl.lat, citl.lng, citl.name_split, citl.namehash)
+    patstat_iter = zip(patstat.name, patstat.lat, patstat.lng, patstat.name_split, patstat.namehash)
 
     import time
     start_time = time.time()
@@ -70,12 +84,12 @@ for country in eu27:
             print idx
         record_dist = []
         for patstat_record in patstat_iter:
-            if isinstance(patstat_record[0], str):
+            if citl_record[-1] == patstat_record[-1]:#isinstance(patstat_record[0], str):
                 lev_name_dist = Levenshtein.ratio(citl_record[0].lower(),
                                                   patstat_record[0].lower()
                                                   )
-                jac_name_dist = jaccard(citl_record[0].lower(),
-                                        patstat_record[0].lower()
+                jac_name_dist = jaccard(citl_record[3],
+                                        patstat_record[3]
                                         )
                 
             else:
@@ -96,8 +110,10 @@ for country in eu27:
                 
                 record_dist.append((citl_record[0],
                                     patstat_record[0],
-                                    name_dist,
-                                    geo_dist
+                                    lev_name_dist,
+                                    jac_name_dist,
+                                    geo_dist,
+                                    country
                                     )
                                    )
 
@@ -106,7 +122,6 @@ for country in eu27:
 
         # Take the top N so we can filter for later
         citl_match = sorted_dist[:n_matches]
-        citl_match.append(country)
         
         country_record_matches.extend(citl_match)
 
@@ -116,6 +131,8 @@ for country in eu27:
     print 'Finished %s in %f minutes' % (country, country_time)
 
 df_out = pd.DataFrame(all_record_matches,
-                      columns=['citl_name', 'patstat_name', 'name_dist', 'geo_dist', 'country']
+                      columns=['citl_name', 'patstat_name',
+                               'lev_name_dist', 'jac_name_dist',
+                               'geo_dist', 'country']
                       )
 df_out.to_csv('citl_patstat_matches.csv', index=False)
