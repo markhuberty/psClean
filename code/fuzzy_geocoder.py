@@ -29,41 +29,45 @@ def city_geocoder(addr, city_df, hashfun, threshold):
 
 
 def simple_address_check(addr, city_df):
-    city_df.set_index('city', inplace=True) ## is this going to modify the global?
+
     city_candidates = []
-    for w in addr.reverse():
-        try:
-            city = city_idf[w]
-        except IndexError:
-            continue
-        city_candidates.append((city,
-                                city_df[w].lat,
-                                city_df[w].lng
-                                )
-                               )
+    addr_split = addr.split(' ')
+    addr_split.reverse()
+    for w in addr_split:
+        if w in city_df.city:
+            city_lat, city_lng = city_df[city_df.city == w][['lat', 'lng']]
+            city_candidates.append((w,
+                                    city_lat,
+                                    city_lng
+                                    )
+                                   )
     if len(city_candidates) > 0:
-        return city_candidates[-1]
+        return city_candidates[0]
     else:
         return [None] * 3
 
 
 def fuzzy_address_check(addr, city_df, hashfun, j_threshold):
 
-    city_df.set_index('city_hash', inplace=True)
-    hashed_addr = [hashfun(w)[0] for w in addr]
-    hashzip = zip(addr, hashed_addr)
+    #city_df.set_index('city_hash', inplace=True)
+    addr_split = addr.lower().split(' ')
+    hashed_addr = [hashfun(w)[0] for w in addr_split]
+    hashzip = zip(addr_split, hashed_addr)
+    hashzip.reverse()
     city_candidates = []
-    for w, h in hashzip.reverse():
-        try:
-            sub_df = city_df[h]
-        except IndexError:
+    #print hashzip
+    for w, h in hashzip:
+
+        sub_df = city_df[city_df.city_hash == h]
+        if sub_df.shape[0] == 0:
             continue
-        city = string_jaccard(w, sub_df.city.values, J_threshold)
-        city_candidates.append((city,
-                                city_df.lat[city],
-                                city_df.lng[city]
-                                )
-                               )
+        city = string_jaccard(w, sub_df.city.values, j_threshold)
+        if city:
+            city_candidates.append((city,
+                                    city_df.lat[city_df.city == city].values[0],
+                                    city_df.lng[city_df.city == city].values[0]
+                                    )
+                                   )
     if len(city_candidates) > 0:
         return city_candidates[0]
     else:

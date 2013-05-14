@@ -85,7 +85,7 @@ for f in files:
             if idx > 0 and idx % 1000 == 0:
                 print idx
                 print (time.time() - start_time) / idx
-            gl = fuzzy_geocoder.fuzzy_city_check(addr.lower(), country_latlong, dmeta, 0.5)
+            gl = fuzzy_geocoder.fuzzy_address_check(addr.lower(), country_latlong, dmeta, 0.5)
             geocoded_locales.append(gl)
     
         locales = [g[0] for g in geocoded_locales]

@@ -85,7 +85,8 @@ input_df.Name.fillna('', inplace=True)
 # input_df = input_df[:30000]
 
 rounds = [1, 2]
-recall_weights = [0.5, 1.5]
+#recall_weights = [1, 1.5]
+recall_weights = [1, 2]
 ppcs = [0.001, 0.001]
 dupes = [5, 5]
 twostage = [False, True]
