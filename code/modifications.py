@@ -10,6 +10,7 @@ import pandas as pd
 import re
 import AsciiDammit
 import numpy as np
+import unidecode
 
 def str_findall(strng, val):
     idx = [m.start() for m in re.finditer(val, strng)]
@@ -281,7 +282,10 @@ re_multispace = re.compile('\s+')
 re_comma = re.compile('[,\.]')
 
 def asciidammit(ser):
-    out = [AsciiDammit.asciiDammit(s) if isinstance(s, str) else '' for s in ser]
+    ascii_from_uni = [unidecode.unidecode(s) if isinstance(s, str) else ''
+                      for s in ser
+                      ]
+    out = [AsciiDammit.asciiDammit(s) ascii_from_uni]
     out = [re_comma.sub(' ', s) for s in out]
     out = [re_multispace.sub(' ', s) for s in out]
-    return out
+    return out.lower()

@@ -1,15 +1,17 @@
-import AsciiDammit
 import consolidate_df as cd
+import csv
 import modifications as md
+import name_address_parser as nap
 import numpy as np
 import os
 import pandas as pd
 import re
+import sys
 import time
-import csv
-import fuzzy_geocoder
-import fuzzy
-import name_address_parser as nap
+
+
+sys.path.append('~/Documents/fuzzygeo')
+import fuzzygeo
 
 def nan_helper(val):
     try:
@@ -27,11 +29,9 @@ dtypes = [np.int32, np.int32, np.int32, object, object, object, object, object, 
 typedict = dict(zip(file_header, dtypes))
 
 city_latlong = pd.read_csv('city_latlong.csv')
-city_latlong.columns = ['country', 'city', 'lat', 'lng']
+city_latlong.columns = ['country', 'city', 'region', 'lat', 'lng', 'pop']
 
-dmeta = fuzzy.DMetaphone(3)
-city_latlong['city_hash'] = [dmeta(city)[0] for city in city_latlong.city]
-
+geocoder = fuzzygeo.fuzzygeo(city_latlong)
     
 for f in files:
     print f
@@ -57,35 +57,32 @@ for f in files:
     person_patent_map.columns = ['Person', 'Patent']
     
     country = df.person_ctry_code.values[0].lower()
-    country_latlong = city_latlong[city_latlong.country == country]
-    if country_latlong.shape[0] > 0:
-        geocode=True
+
+    if country in city_latlong.country.values:
+        geocode = True
     else:
-        geocode=False
+        geocode = False
 
     # Clean up the names and ascii-ize them
     # First clean up names and find addresses
     ascii_names = md.asciidammit(df['person_name'])
-
-    # Then lowercase everything
-    ascii_names = [n.lower() for n in ascii_names]
     df['person_name'] = ascii_names
 
     # Then geocode the addresses
     if geocode:
         print 'geocoding'
         addresses = df.person_address.dropna().drop_duplicates()
-        clean_addresses = [re.sub('A14', 'U',  addr) for addr in addresses]
+        clean_addresses = [unidecode.unidecode(addr) for addr in addresses]
 
 ## First geocode all the addresses that we have
         geocoded_locales = []
-        #city_latlong_de = city_latlong[city_latlong.country == 'be']
+
         start_time = time.time()
         for idx, addr in enumerate(clean_addresses):
             if idx > 0 and idx % 1000 == 0:
                 print idx
                 print (time.time() - start_time) / idx
-            gl = fuzzy_geocoder.fuzzy_address_check(addr.lower(), country_latlong, dmeta, 0.5)
+            gl = geocoder(addr.lower(), country, 0.5)
             geocoded_locales.append(gl)
     
         locales = [g[0] for g in geocoded_locales]
@@ -125,7 +122,7 @@ for f in files:
             name, address = nap.parse_name(n)
         
             if address:
-                gl = fuzzy_geocoder.fuzzy_city_check(address.lower(), country_latlong, dmeta, 0.5)
+                gl = geocoder(address, country, 0.5)
                 name_locale = [n, name]
                 name_locale.extend(gl)
                 d_locale = dict(zip(name_fields, name_locale))
@@ -172,6 +169,8 @@ for f in files:
                         }
 
     df_consolidated = cd.consolidate(df, 'Person', consolidate_dict)
+
+    df_consolidated['patent_ct'] = df.groupby('Person').size()
 
     # Write out
     person_patent_out = '../data/dedupe_input/person_patent/' + country + '_person_patent_map.csv'
