@@ -8,9 +8,9 @@ import pandas as pd
 import re
 import sys
 import time
+import unidecode
 
-
-sys.path.append('~/Documents/fuzzygeo')
+sys.path.append('/home/markhuberty/Documents/fuzzygeo')
 import fuzzygeo
 
 def nan_helper(val):
@@ -28,10 +28,15 @@ file_header = ['', 'appln_id','person_id','person_name','person_address','person
 dtypes = [np.int32, np.int32, np.int32, object, object, object, object, object, object, np.int32]
 typedict = dict(zip(file_header, dtypes))
 
-city_latlong = pd.read_csv('city_latlong.csv')
-city_latlong.columns = ['country', 'city', 'region', 'lat', 'lng', 'pop']
+city_latlong = pd.read_csv('latlong_dict.csv')
+city_latlong.columns = ['city', 'country', 'lat', 'lng', 'population', 'region']
 
-geocoder = fuzzygeo.fuzzygeo(city_latlong)
+countries = [f.split('.')[0][-2:].lower() for f in files]
+
+geocoders = dict((c, fuzzygeo.fuzzygeo(city_latlong[city_latlong.country==c]))
+                 for c in countries if c in city_latlong.country.values
+                 )
+
     
 for f in files:
     print f
@@ -58,7 +63,7 @@ for f in files:
     
     country = df.person_ctry_code.values[0].lower()
 
-    if country in city_latlong.country.values:
+    if country in geocoders:
         geocode = True
     else:
         geocode = False
@@ -72,7 +77,8 @@ for f in files:
     if geocode:
         print 'geocoding'
         addresses = df.person_address.dropna().drop_duplicates()
-        clean_addresses = [unidecode.unidecode(addr) for addr in addresses]
+        addresses = addresses[addresses != '']
+        clean_addresses = [unidecode.unidecode(addr).strip() for addr in addresses.values]
 
 ## First geocode all the addresses that we have
         geocoded_locales = []
@@ -82,7 +88,7 @@ for f in files:
             if idx > 0 and idx % 1000 == 0:
                 print idx
                 print (time.time() - start_time) / idx
-            gl = geocoder(addr.lower(), country, 0.5)
+            gl = geocoders[country](addr.lower(), country, 0.8)
             geocoded_locales.append(gl)
     
         locales = [g[0] for g in geocoded_locales]
@@ -116,17 +122,26 @@ for f in files:
                 if idx > 0 and idx % 1000 == 0:
                     print idx
                     print (time.time() - start_time) / idx
-                    print (time.time() - incr_time) / 1000
+
                     incr_time = time.time()
 
-            name, address = nap.parse_name(n)
+                name, address = nap.parse_name(n)
         
-            if address:
-                gl = geocoder(address, country, 0.5)
-                name_locale = [n, name]
-                name_locale.extend(gl)
-                d_locale = dict(zip(name_fields, name_locale))
-                geocoded_names.append(d_locale)
+                if address:
+                    try:
+                        this_country = re.search('\s[a-z]{2}$', address).group().strip()
+                    except AttributeError:
+                        this_country = country
+                        
+                    address = re.sub('\s+', '', re.sub('\s[a-z]{2}$', '', address))
+                    if this_country in geocoders:
+                        gl = geocoders[this_country](address, this_country, 0.5)
+                    else:
+                        gl = geocoders[country](address, this_country, 0.5)
+                    name_locale = [n, name]
+                    name_locale.extend(gl)
+                    d_locale = dict(zip(name_fields, name_locale))
+                    geocoded_names.append(d_locale)
 
         name_addr_df = pd.DataFrame(geocoded_names)
         if name_addr_df.shape[0] != 0:

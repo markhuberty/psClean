@@ -285,7 +285,7 @@ def asciidammit(ser):
     ascii_from_uni = [unidecode.unidecode(s) if isinstance(s, str) else ''
                       for s in ser
                       ]
-    out = [AsciiDammit.asciiDammit(s) ascii_from_uni]
+    out = [AsciiDammit.asciiDammit(s) for s in ascii_from_uni]
     out = [re_comma.sub(' ', s) for s in out]
-    out = [re_multispace.sub(' ', s) for s in out]
-    return out.lower()
+    out = [re_multispace.sub(' ', s.lower()) for s in out]
+    return out

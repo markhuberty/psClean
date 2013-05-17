@@ -91,4 +91,8 @@ svc_fit = svc.fit(dist_mat, np.array(is_match))
 svc_pred = svc_fit.predict(dist_mat)
 svc_score = cv.cross_val_score(svc, dist_mat, np.array(is_match), cv=10)
 
+pred_mat = df_match[['lev_name_dist', 'jac_name_dist', 'geo_dist']]
+pred_mat.geo_dist.fillna(0, inplace=True)
+out = svc_fit.predict(pred_mat)
 
+df_match[out==1].to_csv('predicted_citl_matches.csv', index=False)
