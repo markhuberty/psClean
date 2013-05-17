@@ -146,7 +146,7 @@ ggsave(plot.pr,
        )
 
 
-df.pr <- df.pr[df.pr$cluster_label == "cluster_id_r1",]
+df.pr <- df.pr[df.pr$cluster_label == "cluster_id_r2",]
 df.pr <- df.pr[,-2]
 
 # assumes be, it, fr, es, nl, dk, fi
