@@ -1,0 +1,841 @@
+\documentclass[11pt]{article}
+\usepackage{natbib}
+\usepackage[usenames, dvipsnames, svgnames, table]{xcolor}
+\usepackage[dvipdfm,colorlinks=true,urlcolor=DarkBlue,linkcolor=DarkBlue,bookmarks=false,citecolor=DarkBlue]{hyperref}
+
+\usepackage[pdftex]{graphicx}
+\usepackage{fancyhdr}
+\usepackage[T1]{fontenc}
+\usepackage{palatino}
+\usepackage[utf8]{inputenc}
+%\usepackage[super]{nth}
+\usepackage{setspace}
+\usepackage{placeins}
+% \usepackage{subfigure}
+% \usepackage{multirow}
+\usepackage{rotating}
+\usepackage{marvosym}  % Used for euro symbols with \EUR
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage{longtable} %% Allows the use of the longtable format produced by xl2latex.rb
+\usepackage{lscape} %% Allows landscape orientation of tables
+% \usepackage{appendix} %% Allows customization of the appendix properties
+\setcounter{tocdepth}{1} %% Restricts the table of contents to the section header level entries only
+
+
+\usepackage{geometry}
+\geometry{letterpaper}
+\usepackage{amsmath}
+\graphicspath{{../figures/}}
+
+
+\title{A flexible, scaleable approach to the international patent
+  ``name game''\thanks{This
+    work was supported by the SIMPATIC project under the Seventh European Union Framework Programme. Mark Huberty received additional support from the United States
+    Environmental Protection Agency STAR fellowship for work relating to
+    the political economy of green innovation. We thank in particular
+    Lee Fleming, for use of his disambiguation engine and helpful consultation; Forest
+    Gregg and Derek Elder, who wrote the \texttt{dedupe} library for
+    Python; and KU Leuven, for providing the benchmark data based on
+    their disambiguation of PATSTAT. All errors remain our own.}\\
+  DRAFT NOT FOR CIRCULATION}
+\author{Mark Huberty\thanks{University of California,
+    Berkeley. \texttt{markhuberty@berkeley.edu}}, Amma
+  Serwaah\thanks{Bruegel.}, and Georg Zachmann\thanks{Bruegel. \texttt{georg.zachmann@bruegel.org}}}
+\date{\today}
+
+\begin{document}
+\maketitle
+\doublespacing
+
+\begin{abstract}
+  This paper reports a new approach to disambiguation of large patent
+databases. Available international patent databases do not identify
+unique innovators. Record disambiguation poses a significant barrier
+to subsequent research. Present methods for overcoming this barrier
+couple ad-hoc rules for name harmonization with labor-intensive manual
+checking. We present instead a computational approach that requires
+minimal and easily automated data cleaning, learns
+appropriate record matching criteria from minimal human coding, and
+dynamically addresses both
+computational and data quality issues that have impeded progress. We show
+that these methods yield accurate results at rates comparable to
+outcomes from more resource-intensive hand coding.
+\end{abstract}
+
+
+\section{Introduction}
+\label{sec:introduction}
+
+Interest in innovation microdata has risen along with the availability
+of detailed patent databases. However, data quality poses significant
+barriers to their use. Patent databases do not reliably identify all
+instances of the same inventor as a unique entity. Hence the ``name
+game''--correctly identifying which patents belong to the same
+inventor--has received significant interest. Enabling accurate name
+disambiguation that scales to the millions of legacy patents and the
+thousands of new patents filed each year poses both conceptual and
+computational challenges. 
+
+We illustrate an approach to the name game that disambiguates
+innovator names rapidly, at high rates of accuracy, with relatively
+minimal human intervention. For all but the most prolific innovators,
+disambiguation of hundreds of thousands of innovators can be done in
+only a few hours on consumer-grade hardware. The approach is
+implemented in an open-source library in a high-level language,
+permitting relatively straightforward experimentation and
+customization. We suggest that this approach has significant promise
+for resolving some of the major challenges in the name game going
+forward.
+
+\section{Prior work on PATSTAT disambiguation}
+\label{sec:prior}
+
+The PATSTAT database, supplied by the European Patent Office,
+consolidates patents from over 80 individual patent offices
+worldwide.\footnote{See
+  \url{http://www.epo.org/searching/subscription/raw/product-14-24.html}
+for more information on PATSTAT.} As of the October 2011 release, it contained upwards of 41
+million inventors associated with 73 million patent
+applications. Regular releases and expanding coverage have made it a
+valuable resource for research on cross-national innovation. 
+
+PATSTAT does not provide unique identification of individuals in its
+database. Instead, one individual may be identified under more than
+one identity, depending on how their patent office manages inventor
+registration. Those identities may share the same name, but under
+different numerical identifiers. Or, their names may vary in spelling
+(either alternate spellings or misspellings), the presence of legal
+identifiers for firms, the order of name components, and other
+aspects. Hence researchers must play the ``name game'', wherein they
+attempt to identify all instances of an individual and associate them
+with a single unique identifier.
+
+Solutions to the ``name game'' tend to fall into two categories. The
+first, widely employed for PATSTAT, uses ad-hoc find-and-replace rules
+to harmonize names as much as possible. Approximate string matching
+then attempts to identify all valid similar names from the resulting
+pool of ``clean'' names and associate them
+to a unique identifier. This approach was pioneered by
+\cite{raffo2009play}, and is presently used to generate the OECD Harmonized
+Applicant Name (HAN) database. Additional manual disambiguation may further
+improve the accuracy of the matched data. The KU Leuven variant on HAN
+undertakes manual disambiguation on prolific inventors. That variant reports precision and
+recall rates exceeding 99\% for the largest innovators, when measured
+against a small hand-curated set of patents \citep{callaert2011patent}.
+
+A second approach applies statistical and machine learning techniques
+to cluster equivalent names together. Instead of using only name data,
+as in the ad-hoc string cleaning approach, machine learning methods
+disambiguate based on a broader profile of the
+inventor. \cite{lai2011disambiguation} treat the record of interest as
+the inventor-patent instance. Inventors are thus ultimately identified
+by both personal information (name and address) and patent information
+(coauthors and technology categories). These multidimensional profiles
+are then amenable to a semi-supervised approach to statistical
+matching, drawing on the Bayesian approach implemented by
+\cite{torvik2005probabilistic}, that clusters together patents
+associated with the same inventor.
+
+Both approaches have their drawbacks. The ad-hoc approach focusing on
+name alone ignores valuable information about innovators that may
+improve results. For instance, the ``John Smith'' patenting in
+agricultural technologies is likely not the ``John Smith'' patenting
+in thin-film semiconductors. Furthermore, supplementing this manual
+approach with human intervention requires a significant and ongoing
+commitment of resources. 
+
+Machine learning resolves these issues to
+some extent, but as implemented depends on reasonably well-formatted
+data to function
+appropriately. The United States Patent and Trademark Office data used by
+\citeauthor{lai2011disambiguation} are very well-curated. Names
+are reliably separated into first, middle, and last components;
+and address information is complete in most cases and is reliably
+separated into street, city, US state, and country. In contrast, the
+name data in PATSTAT are not reliably formatted, and address data are
+both sparse and inconsistent. Figure \ref{fig:profile-completeness}
+shows that addresses are sparse for most countries in the European Union. Of those
+addresses, quality can vary from a complete street address with city
+and postcode, to only city. In other cases, the address is missing,
+but can be found in the inventor name field on closer inspection. This
+variability results, as figure \ref{fig:addr-geocoded-shares} shows,
+in significant variation in machine-readable and parse-able addresses.
+
+This paper illustrates an new approach that attempts to correct for
+the shortcomings of both methods as applied to PATSTAT. We implement a
+machine learning approach to inventor disambiguation. Our approach
+uses more flexible rules for grouping and aggregating data than the
+approach taken by \cite{lai2011disambiguation}, permitting greater
+accuracy on poorly-structured patent data. We further illustrate how
+this approach can be structured to accurately aggregate both
+high-frequency innovators with significant but unimportant name
+variance; and low-frequency innovators where name variance is highly
+important to distinguishing unique inventors. We show that these
+methods approach levels of accuracy obtained by hand-matching, at a
+fraction of the time required.
+
+\section{Data}
+\label{sec:data}
+
+The PATSTAT data are characterized by extreme cross-national
+variability in data quality and completeness. In general, patent
+profiles reliably include:
+\begin{itemize}
+\item Person or company name
+\item Patent technical categories (IPC codes)
+\item Patent / inventor relationships
+\end{itemize}
+
+Inventor names, while complete, have a variety of problems. First, no
+reliable resolution of name into its components (first/middle/last) is
+provided. Second, name data often contain unrelated information, such
+as addresses. Third, some records appear to transpose the Name and
+Coauthor fields. Fourth, some records appear to put multiple
+co-patenters into a single Name. Fifth, non-English names are not
+consistently transcribed into English phonetics. This is a minor
+problem for some countries, and a major difficulty for others. For
+instance, Germany may transcribe an umlaut, as in
+``Sch\"on'', to either ''Schon'' or  ``Schoen''. Transformations of
+Asian names into Latin characters generates even more spelling and
+phonetic variance.
+
+Other data are even less reliable:
+\begin{itemize}
+\item Address data are readily available for US innovators but sparse besides
+\item Some address data are contained in the name field; but this is
+  not reliably formatted
+\item Corporate legal identifiers are not consistently formatted in
+  name fields, and are not provided separately
+\end{itemize}
+
+Address data are particularly problematic here. Given two identical
+names, the geographic location of two inventors may prove critical to
+determining whether they are the same person. In addition to address
+sparsity, PATSTAT addresses are not reliably separated from names.The
+form taken by address data varies from a complete address with street,
+city, and postcode; to only a city name. This makes address
+comparison difficult; and makes parsing addresses out of names a
+complicated exercise.
+
+% This variability raises two related issues for any disambiguation
+% approach:
+% \begin{enumerate}
+% \item Any blocking strategy that must be specified in advance lacks a
+%   reliable rubric for specifying blocks that will reliably group
+%   likely matches into a block for comparison
+% \item Any record comparison strategy must use country-specific
+%   weighting or thresholds, consequence of the country-level
+%   variability in data quality and completeness
+% \end{enumerate}
+
+% Approaches taken to date do not reflect these issues. That taken by
+% \cite{raffo2009play} uses a global threshold for approximate string
+% comparison, and employs a rigid blocking strategy based on leading
+% name characters. But, as we have seen, the unreliable order of PATSTAT
+% name entities informs against an approach that blocks on leading name
+% characters, as it will not reliably compare ``John Smith'' and
+% ``Smith, John''. The machine learning strategy deployed by
+% \cite{lai2011disambiguation} for US data improves on this approach by
+% learning good comparison weights from training data, but uses a rigid,
+% pre-specified blocking strategy that depends on reliably-formatted
+% name data.
+
+\section{Disambiguation approach}
+\label{sec:disamb-appr}
+
+We propose a machine learning-based approach that attempts to address
+data quality and completeness issues without substantial human
+intervention. We demonstrate that such an approach can make rapid
+progress on disambiguation. We present results for country-level
+innovator data for seven countries in the EU-27: the Netherlands,
+Belgium, Denmark, Finland, France, Spain, and Italy. For all but
+France, disambiguation took less than 3 hours on consumer-grade PC
+hardware.\footnote{All computation used an AMD Phenom II X4 quad-core
+chip running at 3.2MHz, with 16gb RAM, running Ubuntu 10.04 LTS.}
+Precision and recall rates compared with the hand-matched Leuven
+records reliably met or exceeded 95\% in all cases except France.
+
+\subsection{Overview}
+\label{sec:overview}
+
+Our approach adopts a four-step approach to name disambiguation. All
+data were drawn from the October 2011 version of PATSTAT:
+
+\begin{enumerate}
+\item Generate person-patent records with the following
+  data for each PATSTAT \texttt{person\_id}\footnote{Compare these data to the much more elaborate data available to
+    \cite{lai2011disambiguation}: first name, middle name, last name,
+    street, city, postcode, country, coauthor, patent assignee,
+    and technical class.}:
+  \begin{enumerate}
+  \item Inventor name (person or company)
+  \item Address
+  \item Coauthors
+  \item IPC classes
+  \end{enumerate}
+\item Perform basic string cleaning, including case standardization,
+  diacritic removal, and excess whitespace removal
+\item Geocode all addresses\footnote{Geocoding was performed using
+    a fuzzy search matching algorithm to match addresses against
+    cities in the Maxmind world cities
+    database (\url{http://www.maxmind.com/en/worldcities}). See
+    \url{https://github.com/markhuberty/fuzzygeo} for code and documentation.},
+  returning their latitude-longitude pairs. 
+  If address data were
+  blank, the name field was checked for address information. If the
+  address was found in the name field, the name and address were
+  split, the record name updated with the address-free name, and the
+  address geocoded.
+\item Aggregate all records corresponding to a unique PATSTAT
+  \texttt{person\_id} into a single person record, consisting of:
+  \begin{enumerate}
+  \item Most common name variant
+  \item Most common non-null latitude/longitude pair
+  \item All unique coauthors, up to a limit of 100
+  \item All unique 4-digit patent codes, up to a limit of 100
+  \item Count of all patents attributed to that \texttt{person\_id}
+  \end{enumerate}
+  Note that if more than 100 coauthors or patent codes were found, 100
+  were randomly selected for inclusion.
+\item Disambiguate the resulting person file using methods for learnable record linkage described
+  by \cite{bilenko2006learnable} and implemented in the
+  \texttt{dedupe} library for Python.\footnote{See
+    \url{https://github.com/open-city/dedupe} for more detail on
+    \texttt{dedupe}.} 
+\end{enumerate}
+
+
+%% Example of a multiple-names-in-name-field problem. The non-firm
+%% inventors here are all lumped together.
+% LatLong :  (0.0,0.0)                                                                                                                                         
+% frozenset(['boehringer ingelheim int'])                                                                                                           
+% |Name :  konetzki ingo bouyssou thierry hoenke christoph lustenberger
+% philipp schnapp andreas cereda enzo                                                      
+% |Class :  frozenset(['c07d', 'a61k', 'a61p'])  
+
+\subsection{Disambiguation with learnable blocking and comparison}
+\label{sec:disamb-with-learn}
+
+The \cite{bilenko2006learnable} approach implemented in the
+\texttt{dedupe} library is particularly attractive
+for poorly formatted data because it learns \textit{both} the best comparison
+metric \textit{and} the best blocking rules. All disambiguation
+methods face an intractable computational problem: the number of
+possible pairwise comparisons between records scales
+as the square of the number of records. Comparing all records to each
+other thus quickly becomes impractical. Resolving this problem
+requires some form of blocking rule that compares only likely
+duplicates. Blocking rules are usually rigid--for instance, comparing
+only those records whose first name shares the same first letter; or
+grouping together individuals who live in the same city. But the
+PATSTAT data has both inconsistently-formatted data and missing data,
+and consequently lacks the standardization that allows rigid blocking
+rules to perform well. 
+
+The \texttt{dedupe} library instead selects blocking approaches from a
+stable of possible blocking ``predicates'' based on user-encoded
+data. Predicates go beyond simple
+heuristics to include more variable options like ``any consecutive
+three letters'' or ``same latitude/longitude grid cell''. This form of
+blocking can successfully block strings containing the same word
+entities even if those entities are in different orders. Blocks are
+constructed from these predicates to maximize the probability that
+matching records are placed in the same block together. Using that
+same labeled data, \texttt{dedupe} then learns a set of optimum
+comparison thresholds for accepting or rejecting matches. By learning
+both the blocking strategy and the criteria for identifying
+duplicates, \texttt{dedupe} helps account for the two problems created
+by the variability of the PATSTAT data: the lack of standardized
+formatting (and hence difficulty of blocking given a pre-specified
+ruleset) and the variation in match criteria owing to cross-national
+differences in data quality, name homogeneity, and other factors.
+
+Selection of valid district metrics requires some care to correctly
+resolve name variance for different inventor types. Consider two different types of inventors: 
+
+\begin{enumerate}
+\item Large companies, who patent frequently, under names that display
+  significant--but otherwise unimportant--name variation. E.g., we
+  identify at least four variants on the Dutch firm Philips
+  Electronics: Philips Electronics, Konink Philips Electronics, Philips
+Gloeilampenfabrik, and Koninklijke Philips Electronics. Spelling and
+transcription errors create further, unimportant name variance.
+\item Individuals patent infrequently, under names common
+  to people from their country of origin. E.g., many distinct American
+  inventors may have the name ``James Smith''. Relatively minor
+  variance (e.g., between ``James Smith'' and ``Jane Smith'') is very
+  important for distinguishing unique inventors.
+\end{enumerate}
+
+A valid matching strategy should explicitly model the interaction between
+the frequency of patenting and other similarity measures. Comparisons
+between records with similar patent counts should require very close name
+matches in addition to similarity among non-name features (geography,
+technology class, and coauthors); comparisons between records with
+widely divergent patent counts should do the opposite, down-weighting
+the name comparison and putting greater weight on the non-name
+features. This weighting scheme will permit large organizations with
+significant name variation to be lumped together, without also
+over-aggregating individuals. We implement this with an interaction
+term between the string distance between names, and the inverse of the
+differences in patent counts. The complete record distance specification
+is described in Table \ref{tab:dist-metrics}
+
+
+%% Problem--need some selection heuristic for the p/r tradeoff, right
+%% now the NL and IT data are just weird outliers that I don't understand.
+
+\section{Results}
+\label{sec:results}
+
+
+We present results two results. First, we show that the disambiguation
+approach described above generates highly accurate results when
+compared with the Leuven dataset. We note that the Leuven dataset is
+not, itself, a master record of hand-disambiguated patents. Instead,
+it too is generated using a set of tuned algorithms, combined with
+some manual disambiguation. We use it here as the Leuven results
+suggest very high rates of accuracy overall. Furthermore, the Leuven
+data provide the ability to broad-based comparisons instead of narrow
+comparisons on relativly small collections of hand-curated patent
+matches.
+
+Second, we discuss heuristics for choosing the optimum
+precision-recall tradeoff for the \texttt{dedupe} algorithm. 
+
+\subsection{Core countries}
+\label{sec:core-countries}
+
+Testing of this single-shot disambiguation with Belgian data suggested
+that tuning the algorithm to weight recall at 1.5 times precision
+generated highly accurate results. Testing on countries other than
+Belgium showed that this setting worked well for all countries but the
+Netherlands and Italy, which benefited from stronger weighting towards
+recall. As table \ref{tab:pr} shows, precision and recall both
+exceeded 0.95 for all cases but France, as compared with the
+hand-matched Leuven level 2 data. Moreover, these results were
+superior to those obtained with the inventor-patent instance approach
+taken by \cite{lai2011disambiguation}, while requiring a fraction of
+the compute time. For all but France, complete disambiguation took 2-3
+hours or less, with at most 20 minutes of human input.
+
+\subsection{Exploration of reasons for tuning differences}
+\label{sec:expl-reas-tuning}
+
+As the last column in table \ref{tab:pr} shows, most countries
+performed well with a standard precision-recall tradeoff. However,
+Italy and the Netherlands both benefited from choosing a tradeoff that
+heavily weighted recall over precision. These values were found
+through experimentation in reference to the Leuven dataset. But for
+broad use, we wish to identify a good heuristic for selecting the
+precision-recall tradeoff ahead of time. Hence the variance in
+suitable precision-recall weights by country is troubling. Implicitly,
+it suggests variance in the data that, if known, could provide a
+useful heuristic for model specification.
+
+To test this, we compute the Shannon entropy of each person characteristic
+for each country, on the assumption that more diverse countries (e.g.,
+with higher name variance) will require precision-recall weights that
+favor recall, while those with lower variance will favor precision. 
+
+%% Potential heuristics here:
+%% For the IDs, how much actual difference is there between names? How
+%% much name variance? Is it the name, or the innovation behavior,
+%% that's driving this. Then how to extrapolate this out--say look at
+%% the top innovator, ratio of exact matches to matches w/i L-ratio of
+%% 0.9 or more?
+
+
+
+% \subsection{Optimization: the Netherlands, 1990-2010}
+% \label{sec:optim-neth-1990}
+
+% The Netherlands was chosen as a dataset for testing and tuning of the
+% \texttt{dedupe} logic for patent disambiguation. Investigation of the
+% disambiguation process showed that the two-stage process described
+% above offered the possibility of correctly handling both
+% low-frequency inventors with high name ambiguity; and high-frequency
+% inventors with significant name variance. In the first stage,
+% precision and recall were weighted equally. In the second, looking
+% only at large innovators and their close name matches, recall was
+% weighted over precision by a factor of 2.5. As table
+% \ref{tab:dist-metrics} shows, the results performed well in both
+% precision (96\%) and recall (99\%) compared with the
+% hand-disambiguated Leuven Level 2 reference dataset.
+
+% \subsection{Testing: the EU-27, 1990-2010}
+% \label{sec:test-denm-1990}
+
+% \begin{center}
+%   \textbf{IN PROCESS -- SUBSET OF COUNTRIES SHOWN BELOW}
+% \end{center}
+% These favorable results were arrived at through substantial tuning of
+% both input settings and the flow of data through \texttt{dedupe}. To
+% assess how well that tuning would work in other countries, we tested
+% the approach on the remaining countries from the EU-27. In doing so,
+% we used the same configuration settings as in the Netherlands case,
+% but provided new labeled data and learned new optimum blocking rules
+% for each country. This test is intended to check whether general
+% configuration settings are portable across countries with variable
+% properties.
+
+% Initial results showed that the Netherlands settings worked well for
+% some countries (Finland, Denmark, Belgium) but very poorly for others
+% (Italy, Spain, France). Examination of patenting behavior in the raw data suggested why
+% this was the case. Figure \ref{fig:patent-share} illustrates the
+% average share of a country's patents assigned to the top 100
+% innovators in that country. We can see that for those countries where
+% the Netherlands data performed well, the top innovators are
+% responsible for a much larger share of the country's patent volume
+% than in countries where the Netherlands settings performed poorly. 
+
+% This insight further breaks down the disambiguation problem. Countries
+% where the top innovators are responsible for a larger share of total patents create a
+% \textit{recall} problem: how to find and group together the numerous and often subtle
+% name variants of these top innovators. In contrast, countries where
+% patent assignment is more broadly distributed face a
+% \textit{precision} problem: finding only the correct matches, possibly
+% among a set of close name homologes. Each of these two variants thus each
+% require precision / recall settings that would perform poorly if
+% applied to the other.
+
+% To handle this result, we assigned different precision / recall
+% tradeoffs by country group. For each country, we specified a round 1 /
+% round 2 precision recall tradeoff $(\rho_1, \rho_2)$. Higher valued
+% $\rho$ put greater emphasis on recall over precision. For countries
+% like the Netherlands, where the recall problem dominated, $(\rho_1,
+% \rho_2) = (1,2.5)$. Countries more like Italy or Spain, where the
+% precision problem dominated, specific $(\rho_1, \rho_2) = (0.75,
+% 1.5)$, emphasizing precision.
+
+% Figure \ref{fig:dedupe-pr} illustrates the resulting precision and
+% recall values, reproduced in table \ref{tab:pr}. Though this set of
+% countries varies substantially in the distribution of patent shares
+% over individuals, the \texttt{dedupe} logic performs similarly as
+% measured by precision and recall. This performance is particularly
+% notable in comparison to the hand-matched Leuven level 2 data, given
+% the substantially lower effort required for the \texttt{dedupe}
+% approach. 
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{patstat_mean_top_innovator_share.pdf}
+  \caption{Mean patent share per individual for the top 100 innovators in the raw PATSTAT data.}
+  \label{fig:patent-share}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{dedupe_precision_recall}
+  \caption{Precision and recall results for seven EU-27 countries
+    across two stages of disambiguation. Id-level values computed in
+    reference to Leuven level 2
+    IDs. Patent values are relative to the Leuven L1 and L2 IDs. Lines
+  indicate changes in precision and recall from stage 1 to stage 2.}
+  \label{fig:dedupe-pr}
+\end{figure}
+
+\begin{landscape}
+
+\begin{table}[ht]
+  \centering
+{\footnotesize
+  \begin{tabular}{lr}
+    \hline
+    Field & Distance metric \\
+    \hline
+    Name  & Learnable affine gap \\
+    Lat / Long & Haversine great circle \\
+    IPC Code & TfIdf-weighted Cosine set similarity \\
+    Coauthor & TfIdf-weighted Cosine set similarity \\
+    Patent count & $\frac{1}{\left|c_a -
+      c_b\right| + 1}$ for patent counts $c$ in
+    records $a, b$\\
+    Patent $\times$ Name & $Name \times Patent~count$ \\
+    \hline
+  \end{tabular}
+}
+  \caption{Distance metrics by field}
+  \label{tab:dist-metrics}
+\end{table}
+
+\input{../tables/tab_precision_recall}
+\end{landscape}
+
+Figure \ref{fig:id-patent-counts} and Table \ref{tab:patent_count_corr}
+illustrate how the count of patents assigned to unique \texttt{dedupe}
+IDs corresponds to the count assigned to the matching ID from the
+Leuven dataset. Again, we see that the correlation between patent
+counts is very high. Implicitly, the ratio of patent counts converges
+to approximately one for most inventors. 
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{plot_patents_per_id}
+  \caption{Comparison of patent counts assigned to matching
+    \texttt{dedupe} and Leuven unique IDs. Each point represents the
+    number of patents assigned to a unique \texttt{dedupe} individual
+    that was also assigned to unique Leuven ID. Points were generated
+    by sampling 10,000 points from all IDs representing 2 or more
+    patents. For IDs that clumped
+    or split their comparison ID, the maximum number of
+    commonly-assigned patents was used.}
+  \label{fig:id-patent-counts}
+\end{figure}
+
+\input{../tables/tab_corr_leuven_dedupe_patent_counts}
+\input{../tables/tab_id_pct_reduction}
+% \begin{figure}[ht]
+%   \centering
+%   \includegraphics[width=\textwidth]{plot_dedupe_leuven_count_correlation}
+%   \caption{Correlation between patent counts assigned to matching \texttt{dedupe} and Leuven IDs.}
+%   \label{fig:corr-patent-counts}
+% \end{figure}
+
+% \begin{figure}[ht]
+%   \centering
+%   \includegraphics[width=\textwidth]{dedupe_id_reduction}
+%   \caption{Percentage reduction in unique records as identified by \texttt{dedupe}.}
+%   \label{fig:pct-unique-reduction}
+% \end{figure}
+
+% \subsection{Testing: accomodating new data}
+% \label{sec:test-accom-future}
+% \begin{center}
+%   \textbf{TODO}
+% \end{center}
+
+% Finally, we turn to incremental disambiguation. The approach outlined
+% here still requires human input for record labeling, even if it
+% attempts to minimize that input. However, a new PATSTAT file is
+% generated every six months, and the USPTO releases new patent records
+% on a more regular basis than that. Hence we would like to be able to
+% adapt the methods used here, for disambiguating a single database, to
+% a different problem: linking new records into a set of disambiguated
+% records. To do so, we structured the following experiment:
+
+% \begin{enumerate}
+% \item Split the Denmark dataset into one set of person-patent records
+%   covering 1990-2008, and another covering 2008-2010
+% \item Disambiguate the 1990-2008 dataset
+% \item Generate a set of unique person records based on the
+%   disambiguated dataset
+% \item Append the 2008-2010 data
+% \item Disambiguate again
+% \end{enumerate}
+
+% \begin{verbatim}
+% This isn't quite right. Note here that we need 
+% to think about this a bit. 
+
+% We _don't want to just re-redupe the entire dataset, 
+% now with added data. We want instead a bipartite 
+% disambiguation. Need to think about
+% that. Different problem than the pure 
+% disambiguation problem.
+% \end{verbatim}
+
+\section{Discussion}
+\label{sec:discussion}
+
+These results point to the potential for rapid, scaleable
+disambiguation of large patent databases with relatively little human
+input. Improved data quality or completeness would help improve on
+these results. In particular, address coverage remains highly
+variable. But beyond this improvement, automatically
+locating innovators in the same region remains difficult. The lack of
+address data poses particular difficulties for individuals with common
+names, who otherwise may be difficult to distinguish on the basis of
+name and innovation data alone.
+
+
+% \section{Conclusions}
+% \label{sec:conclusions}
+
+% Name disambiguation poses a major challenge to users of patent data in
+% general, and the PATSTAT global patent file in particular. We present
+% a new approach that improves on earlier computational approaches and
+% approximates the accuracy of laborious hand-matching approaches. This
+% approach explicitly deals with the problem of variable cross-national
+% data quality that PATSTAT poses, by modeling each national dataset
+% separately. 
+
+
+
+
+% See the Leuven documentation; they get precision of ~ 100% and
+% recall of ~ 90%, so we're doing really well against the hand-matched
+% data. Would be good to have a canonical dataset. 
+
+\appendix
+
+\section{Data attributes and discussion}
+\label{sec:data-attr-disc}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{dedupe_data_summary}
+  \caption{Record completeness for each EU-27 country. This figure illustrates the percent complete records for each field in the \texttt{dedupe} person profile input data. }
+  \label{fig:profile-completeness}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{patstat_dedupe_address_ratio}
+  \caption{Geo-coding completeness for PATSTAT addresses. This figure compares the share of person records with successfully geo-coded addresses to the presence of addresses in the raw data. In many cases, address data were ambiguous and could not be geocoded. In some cases, however, looking for addresses in the name field improved the overall coverage of geographic data. }
+  \label{fig:addr-geocoded-shares}
+\end{figure}
+
+\FloatBarrier
+\section{Geocoding logic}
+\label{sec:geocoding-logic}
+
+The PATSTAT database presents four geocoding challenges: first,
+address information are inconsistently formatted and vary widely in
+completeness. Second, some address data are included in the person or
+company name, rather than in the address field. Third, for European
+names in particular, names themselves may contain geographic
+references that do not actually represent the individual's
+location. For instance, variants on the Germanic construct ``van +
+\texttt{location}'' may encode the place of birth of a distant
+ancestor, while the person themselves now lives quite far away. Hence
+in examining names for address data, we must discriminate between true
+addresses and names with geographic referents. Fourth, some
+individuals with address information in their name clearly come from
+countries other than the one in which the patent was filed. For
+instance, a person living in Germany may be listed on a Dutch patent. We
+implement algorithms to deal with each problem.
+
+\subsection{Fuzzy geocoding}
+\label{sec:fuzzy-geocoding}
+
+Many open geocoding algorithms proceed by looking for exact matches
+for a known geographic entity in the address string.\footnote{For
+instance, the excellent Data Science Toolkit (\url{http://datasciencetoolkit.org}) looks for exact
+word matches. It often does not recognize PATSTAT addresses.} This is
+sub-optimal for PATSTAT given the known problems with address spelling
+and transcription. We implement the following logic to geocode PATSTAT
+addresses at the city level:
+
+\begin{enumerate}
+\item For each address:
+  \begin{enumerate}
+  \item Split the address on spaces
+  \item Identify all unique leading characters in the split address
+  \item Restrict the set of possible cities for comparison to those
+    with first letters in the unique set
+  \end{enumerate}
+\item For each city in the geographic database subset:
+  \begin{enumerate}
+  \item Construct n-grams from the split address of length equal to
+    the city n-gram (e.g. for ``Chicago'', use unigrams; for ``New
+    York'', bigrams, etc)
+  \item Compute the Levenshtein ratio between the city and each n-gram
+  \item Return the nearest-neighbor that exceeds some threshold $\tau$
+  \end{enumerate}
+\item Sort the set of all best matches by Levenstein ratio, breaking
+  ties by (in order) the ending index of the match in the address
+  string (closer to the end is better); and city population (higher is
+  better)
+\item Identify the best city match of all possible matches
+\item Return the latitude and longitude for that city
+\end{enumerate}
+
+This algorithm is designed to:
+\begin{itemize}
+\item Allow for fuzzy matches wherein the city name is misspelled
+\item Prefer matches later in the string, on the assumption that
+  cities are listed towards the end of addresses
+\item Resolve any remaining ambiguity in favor of higher-population cities
+\item Speed geo-coding by restricting the comparison set of cities to
+  likely matches based on leading letters
+\item Avoid mis-identifying cities by looking at the relevant n-gram,
+  rather than the entire string (e.g., to avoid coding ``Frankfurt am
+  Main'' as ``Mainz'' due to the similarity of ``Main'' and ``Mainz'')
+\end{itemize}
+
+The full implementation of the algorithm is available as the
+\texttt{fuzzygeo} module for python, at
+\url{https://github.com/markhuberty/fuzzygeo}. Runtimes scale with the
+number of possible comparison cities. For medium-sized
+countries, this equates to anywhere from 25-50ms per address. This can
+go as high as 100-200ms for a large country with many cities, like the
+United States. Runtimes can be improved by subsetting cities using the
+first two letters of all address ngrams, at obvious risk to
+recall. 
+
+\subsection{Name parsing}
+\label{sec:name-parsing}
+
+We implement the following logic to parse address information from
+names:
+\begin{enumerate}
+\item Split the name at most once on a sequence of numbers bound by
+  spaces on either side
+\item If the split returns two components, check the second component
+  as follows:
+  \begin{enumerate}
+  \item Check for a potential two-letter country code at the end of
+    the string. If that country is not found, or is the same as the
+    country of the patent filing, geocode for that country; else
+    geocode for the alternate country
+  \item Remove the country code, if found, from the address component
+  \item Geocode the address component using the appropriate fuzzy
+    geocoding algorithm as described in \ref{sec:fuzzy-geocoding}
+  \end{enumerate}
+\end{enumerate}
+
+This algorithm assumes:
+\begin{itemize}
+\item That names containing addresses will have a street number
+  dividing the name from the address
+\item That individuals may originate in countries other than that
+  in which the patent is filed
+\end{itemize}
+
+This algorithm will miss geographic content in names that have no
+street code. For instance ``John Smith Chicago'' will not return a
+valid latitude / longitude, while ``John Smith 1234 N. Clark
+St. Chicago'' will. This is an unavoidable consequence of trying to
+explicitly avoid false matches in names that for historic reasons
+embedded geographic data. 
+
+% Proportion w/ raw addresses, vs. w/ latlong data after geocoding
+% names
+% Proportion w/ name not null; proportion w/ coauthor; proportion w/ class
+% %%  TODO: run the comparison on the original cleaned_ files, and
+% %%  then again on the newer dedupe inputs, and tabulate by country.
+
+
+% I propose the following as pre-cleaning steps:
+
+% *1. For address data*
+
+%  PETERS, WIMOLD, VELP, NL
+
+%  RIJKHOF, EVERT JAN, NL-3762 VL  SOEST, NL
+
+%  FAVRE, THOMAS LOUISE F., NL-3133 AT VLAARDINGEN, NL
+
+% 1 - select candidate address data by searching for person names that
+% contain the country code
+% 2 - split off address information by taking everything after the
+% second-to-last comma
+
+
+% *2. For multiple names*
+
+% 1 - select candidate multiple names by looking for person_name fields that
+% are longer than 60 characters (after selecting out address data)
+% 2 - select only those names which don't belong to a company (identify
+% companies by legal ID / Leuven identifiers)
+% 3 - split names on commas
+% 4 - keep if resulting individual names are more than one word long
+% (alternatively stated - if more than two resulting 'names' in step 4 are
+% one word long, we can assume they belong to the same name)
+% Amma
+
+
+\bibliography{/home/markhuberty/bibs/patstat_dedupe}
+\bibliographystyle{apalike}
+\end{document}

@@ -1,9 +1,11 @@
 library(ggplot2)
 library(reshape)
+library(xtable)
+
 setwd("~/projects/psClean")
 df.pr <- read.csv("./data/patstat_country_precision_recall.csv")
 df.id <- read.csv("./data/patstat_dedupe_id_counts.csv")
-df.id <- unique(df.id[,c("X", "patstat", "round1", "round2")])
+df.id <- unique(df.id[,c("X", "patstat", "round1")])
 df.names <- read.csv("./data/patent_inventor_shares.csv")
 
 ## Compute summary stats on the name data
@@ -71,38 +73,22 @@ ggsave(plot.name.means,
 
 ## Generate tables and plots for the unique ID reduction data
 df.id$round1 <- df.id$round1 / df.id$patstat
-df.id$round2 <- df.id$round2 / df.id$patstat
 df.id$patstat <- df.id$patstat / df.id$patstat
-names(df.id) <- c("Country", "PATSTAT", "Dedupe level 1", "Dedupe level 2")
+names(df.id) <- c("Country", "PATSTAT", "Dedupe")
 
-df.id <- melt(df.id, id.vars="Country")
-df.id$label <- ifelse(df.id$variable == "Dedupe level 2",
-                      as.character(df.id$Country),
-                      ""
-                      )
+## Tabulate the pct reduction
+tab.id <- df.id[c("Country", "Dedupe")]
+tab.id$Country = toupper(tab.id$Country)
+tab.id$Dedupe = (1 - tab.id$Dedupe) * 100
+names(tab.id) <- c("Country", "Pct reduction in unique individuals")
 
-
-plot.id.reduction <- ggplot(df.id,
-                            aes(x=variable,
-                                y=value,
-                                group=Country,
-                                label=label
-                                )
-                            ) +
-  geom_line(alpha=0.5, linetype=2) +
-  geom_text(vjust=1) +
-  scale_x_discrete("Disambiguation step") +
-  scale_y_continuous("Unique ID count as pct. of PATSTAT")
-print(plot.id.reduction)
-ggsave(plot.id.reduction,
-       file="./figures/dedupe_id_reduction.pdf",
-       width=7,
-       height=7
-       )
+xtab.id <- xtable(tab.id,
+                  label="tab:id_pct_reduction",
+                  caption="Percentage reduction in unique IDs by country."
+                  )
+print(xtab.id, digits=1, file="./tables/tab_id_pct_reduction.tex")
 
 ## Generate tables and plots for the precision/recall data
-library(xtable)
-
 df.pr.melt <- melt(df.pr, id.vars=c("X", "cluster_label"))
 df.pr.melt$type <- ifelse(grepl("recall", df.pr.melt$variable),
                           "recall",
@@ -113,31 +99,18 @@ df.pr.cast <- cast(df.pr.melt, X + val + cluster_label ~ type)
 df.pr.cast$val <- factor(df.pr.cast$val)
 levels(df.pr.cast$val) <- c("Person ID - Leuven level 2", "Patent - Leuven level 1", "Patent - Leuven level 2")
 
-
-df.pr.cast$group <- paste(df.pr.cast$X, df.pr.cast$val, sep=".")
-levels(df.pr.cast$cluster_label) <- c("Round 1", "Round 2")
-df.pr.cast$country.label <- ifelse(df.pr.cast$cluster_label == "Round 2",
-                                   as.character(df.pr.cast$X),
-                                   ""
-                                   )
-
 plot.pr <- ggplot(df.pr.cast,
                   aes(y=precision,
                       x=recall,
-                      label=country.label,
-                      group=group
+                      group=val,
+                      label=X,
+                      colour=val
                       )
                   ) +
-  geom_line(alpha=0.5, linetype=2) +
-  geom_point(aes(shape=cluster_label)) +
-  geom_text(size=4, hjust=-0.75, vjust=0.75) +
-  scale_shape("Disambiguation stage", guide=guide_legend(direction="horizontal")) +
-  facet_grid(val ~ ., scales="free") +
-  scale_y_continuous("Precision") +
+  geom_text() +
   scale_x_continuous("Recall") +
-  theme(legend.position="top",
-        strip.text.y=element_text(angle=0)
-        )
+  scale_y_continuous("Precision") +
+  scale_colour_discrete("Reference unit and dataset")
 print(plot.pr)
 ggsave(plot.pr,
        file="./figures/dedupe_precision_recall.pdf",
@@ -146,18 +119,17 @@ ggsave(plot.pr,
        )
 
 
-df.pr <- df.pr[df.pr$cluster_label == "cluster_id_r2",]
+df.pr <- df.pr[df.pr$cluster_label == "cluster_id_r1",]
 df.pr <- df.pr[,-2]
 
 # assumes be, it, fr, es, nl, dk, fi
-r.weight <- "(1, 2.5)"
-p.weight <- "(0.5, 1.5)"
-weights.vec <- c(r.weight, p.weight, p.weight, p.weight, r.weight, r.weight, r.weight)
+weights.vec <- c(1.5, 4, 1.5, 1.5, 3, 1.5, 1.5)
 
 df.pr$pr.wt <- weights.vec
 names(df.pr) <- c("Country", "ID precision", "ID recall", "L1 patent precision",
                   "L1 patent recall", "L2 patent precision", "L2 patent recall", "Precision-Recall weights"
                   )
+df.pr$Country <- toupper(df.pr$Country)
 
 tab.pr <- xtable(df.pr,
                  label="tab:pr",
