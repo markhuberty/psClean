@@ -133,7 +133,7 @@ countries = []
 for country in eu27:
 
     try:
-        df_leuven = pd.read_csv(output_dir + country + '/' + 'dedupe_leuven_map.csv')
+        df_leuven = pd.read_csv(output_dir + country + '_weighted/' + 'dedupe_leuven_map.csv')
         df_patent = pd.read_csv(patent_dir + country + '_person_patent_map.csv')
         df_input = pd.read_csv(person_dir + 'dedupe_input_' + country + '.csv')
     except:
@@ -157,7 +157,7 @@ for country in eu27:
                                 )
 
     df_leuven_patent = df_leuven_patent[['cluster_id_r1',
-                                         'cluster_id_r2',
+#                                         'cluster_id_r2',
                                          'leuven_id',
                                          'leuven_ld_level',
                                          'Name'
@@ -169,33 +169,33 @@ for country in eu27:
                                          d_cluster='cluster_id_r1'
                                          )
 
-    leuven_d2 = compute_canonical_counts(df_leuven,
-                                         df_leuven_patent,
-                                         ref_cluster='leuven_id',
-                                         d_cluster='cluster_id_r2'
-                                         )
+    # leuven_d2 = compute_canonical_counts(df_leuven,
+    #                                      df_leuven_patent,
+    #                                      ref_cluster='leuven_id',
+    #                                      d_cluster='cluster_id_r2'
+    #                                      )
 
     d1_spearman = spearmanr(leuven_d1.ref_ct, leuven_d1.dedupe_ct)
     d1_pearson = pearsonr(leuven_d1.ref_ct, leuven_d1.dedupe_ct)
 
-    d2_spearman = spearmanr(leuven_d2.ref_ct, leuven_d2.dedupe_ct)
-    d2_pearson = pearsonr(leuven_d2.ref_ct, leuven_d2.dedupe_ct)
+#    d2_spearman = spearmanr(leuven_d2.ref_ct, leuven_d2.dedupe_ct)
+#    d2_pearson = pearsonr(leuven_d2.ref_ct, leuven_d2.dedupe_ct)
 
     pearsons.append(d1_pearson)
     spearmans.append(d1_spearman)
     cids.append('round1')
     countries.append(country)
 
-    pearsons.append(d2_pearson)
-    spearmans.append(d2_spearman)
-    cids.append('round2')
-    countries.append(country)
+    # pearsons.append(d2_pearson)
+    # spearmans.append(d2_spearman)
+    # cids.append('round2')
+    # countries.append(country)
 
     d1_output_file = output_dir + country + '/dedupe_leuven_patent_counts_r1.csv'
     leuven_d1.to_csv(d1_output_file)
 
-    d2_output_file = output_dir + country + '/dedupe_leuven_patent_counts_r2.csv'
-    leuven_d2.to_csv(d2_output_file)
+    # d2_output_file = output_dir + country + '/dedupe_leuven_patent_counts_r2.csv'
+    # leuven_d2.to_csv(d2_output_file)
 
     print 'finished with %s' % country
     
