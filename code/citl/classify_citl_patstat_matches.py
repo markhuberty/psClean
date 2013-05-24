@@ -67,12 +67,13 @@ def scale(vec):
     vec_mean = np.mean(vec)
     vec_scale = (vec - vec_mean) / vec_std
     return vec_scale
-dist_series = pd.Series(zip(df_match.lev_name_dist, df_match.jac_name_dist, df_match.geo_dist))
 
 df_match['lev_name_dist'] = scale(df_match.lev_name_dist.values)
 df_match['jac_name_dist'] = scale(df_match.jac_name_dist.values)
 df_match['geo_dist'] = scale(df_match.geo_dist.values)
- 
+
+dist_series = pd.Series(zip(df_match.lev_name_dist, df_match.jac_name_dist, df_match.geo_dist))
+
 is_match, dists = label_matches(df_match.citl_name,
                                 df_match.patstat_name,
                                 dist_series

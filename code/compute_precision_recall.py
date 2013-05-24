@@ -164,24 +164,26 @@ for cluster_id in cluster_ids:
 
         # # Person ID recall and precision
         df_leuven_2 = df_leuven[df_leuven.leuven_ld_level == 2]
-        pd.set_printoptions(max_colwidth=30)
         dedupe_na = np.isnan(df_leuven_2.cluster_id_r2)
         df_leuven_2 = df_leuven_2.ix[~dedupe_na]
 
+        if df_leuven_2.shape[0] > 0:
+            df_leuven_2 = df_leuven_2[[cluster_id, 'leuven_id', 'person_id']]
+            grouped_both = df_leuven_2.groupby(['leuven_id', cluster_id])
+            leuven_dedupe_ct = grouped_both.size()
 
-        df_leuven_2 = df_leuven_2[[cluster_id, 'leuven_id', 'person_id']]
-        grouped_both = df_leuven_2.groupby(['leuven_id', cluster_id])
-        leuven_dedupe_ct = grouped_both.size()
+            grouped_leuven_ct = leuven_dedupe_ct.groupby(level=0)
+            max_vals = grouped_leuven_ct.agg(np.max)
+            overall_recall = np.sum(max_vals) / float(np.sum(leuven_dedupe_ct))
+            id_recall.append(overall_recall)
 
-        grouped_leuven_ct = leuven_dedupe_ct.groupby(level=0)
-        max_vals = grouped_leuven_ct.agg(np.max)
-        overall_recall = np.sum(max_vals) / float(np.sum(leuven_dedupe_ct))
-        id_recall.append(overall_recall)
-
-        grouped_dedupe_ct = leuven_dedupe_ct.groupby(level=1)
-        max_vals = grouped_dedupe_ct.agg(np.max)
-        overall_precision = float(np.sum(max_vals)) / np.sum(leuven_dedupe_ct)
-        id_precision.append(overall_precision)
+            grouped_dedupe_ct = leuven_dedupe_ct.groupby(level=1)
+            max_vals = grouped_dedupe_ct.agg(np.max)
+            overall_precision = float(np.sum(max_vals)) / np.sum(leuven_dedupe_ct)
+            id_precision.append(overall_precision)
+        else:
+            id_recall.append('NA')
+            id_precision.append('NA')
 
         # Then compute precision/recall at the patent level
         df_han_pp = pd.merge(df_han, df_pp, how='inner', left_on='person_id', right_on='Person')
@@ -191,24 +193,30 @@ for cluster_id in cluster_ids:
 
         grouped_han_pp = df_han_pp[[cluster_id, 'han_id', 'Patent']].groupby([cluster_id, 'han_id'])
         grouped_leuven_pp = df_leuven_pp[[cluster_id, 'leuven_id', 'Patent']].groupby([cluster_id, 'leuven_id'])
-        grouped_leuven_pp_l2 = df_leuven_pp_l2[[cluster_id, 'leuven_id', 'Patent']].groupby([cluster_id, 'leuven_id'])
 
         han_dedupe_patent_ct = grouped_han_pp.size()
         leuven_dedupe_patent_ct = grouped_leuven_pp.size()
-        leuven_l2_dedupe_patent_ct = grouped_leuven_pp_l2.size()
-
+        
         grouped_han_ct = han_dedupe_patent_ct.groupby(level=1)
         grouped_leuven_ct = leuven_dedupe_patent_ct.groupby(level=1)
-        grouped_leuven_l2_ct = leuven_l2_dedupe_patent_ct.groupby(level=1)
 
         overall_recall = np.sum(grouped_leuven_ct.agg(np.max)) / float(np.sum(leuven_dedupe_patent_ct))
         grouped_dedupe_ct = leuven_dedupe_patent_ct.groupby(level=0)
         overall_precision = np.sum(grouped_dedupe_ct.agg(np.max)) / float(np.sum(leuven_dedupe_patent_ct))
 
-        l2_overall_recall = np.sum(grouped_leuven_l2_ct.agg(np.max)) / float(np.sum(leuven_l2_dedupe_patent_ct))
-        grouped_dedupe_ct = leuven_l2_dedupe_patent_ct.groupby(level=0)
-        l2_overall_precision = np.sum(grouped_dedupe_ct.agg(np.max)) / float(np.sum(leuven_l2_dedupe_patent_ct))
 
+        if df_leuven_pp_l2.shape[0] > 0:
+            grouped_leuven_pp_l2 = df_leuven_pp_l2[[cluster_id, 'leuven_id', 'Patent']].groupby([cluster_id, 'leuven_id'])
+            leuven_l2_dedupe_patent_ct = grouped_leuven_pp_l2.size()
+            grouped_leuven_l2_ct = leuven_l2_dedupe_patent_ct.groupby(level=1)
+            l2_overall_recall = np.sum(grouped_leuven_l2_ct.agg(np.max)) / float(np.sum(leuven_l2_dedupe_patent_ct))
+            grouped_dedupe_ct = leuven_l2_dedupe_patent_ct.groupby(level=0)
+            l2_overall_precision = np.sum(grouped_dedupe_ct.agg(np.max)) / float(np.sum(leuven_l2_dedupe_patent_ct))
+
+        else:
+            l2_overall_recall = 'NA'
+            l2_overall_precision = 'NA'
+            
         l1_patent_recall.append(overall_recall)
         l1_patent_precision.append(overall_precision)
         l2_patent_recall.append(l2_overall_recall)
@@ -217,10 +225,10 @@ for cluster_id in cluster_ids:
         df_dedupe = df_leuven[['Person', 'cluster_id_r1', 'cluster_id_r2']].drop_duplicates()
         n_pid = len(df_dedupe.Person.drop_duplicates())
         n_id1 = len(df_dedupe.cluster_id_r1.drop_duplicates())
-        n_id2 = len(df_dedupe.cluster_id_r2.drop_duplicates())
+        #n_id2 = len(df_dedupe.cluster_id_r2.drop_duplicates())
         pid_count.append(n_pid)
         id1_count.append(n_id1)
-        id2_count.append(n_id2)
+        #id2_count.append(n_id2)
 
 
     pr_dict = {'cluster_label': cluster_label,
@@ -233,8 +241,8 @@ for cluster_id in cluster_ids:
                }
     id_dict = {'cluster_label': cluster_label,
                'patstat': pid_count,
-               'round1': id1_count,
-               'round2': id2_count
+               'round1': id1_count#,
+               #'round2': id2_count
                }
 
     pr_out = pd.DataFrame(pr_dict, index=country_index)
