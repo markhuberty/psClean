@@ -67,10 +67,13 @@ for country in eu27:
 
     df_patent_consolidated.columns = ['lat', 'lng', 'name']
     df_patent_consolidated['source'] = 'patstat'
+    df_patent_consolidated['country'] = country
+    df_patent_consolidated['id'] = df_patent_consolidated.index
 
 
-    df_citl = df_citl[['accountholder', 'lat', 'lng']]
-    df_citl.columns = ['name', 'lat', 'lng']
+    df_citl = df_citl[['accountholder', 'lat', 'lng', 'installationidentifier']]
+    df_citl.columns = ['name', 'lat', 'lng', 'id']
+    df_citl['country'] = country
     df_citl['source'] = 'citl'
 
     df_concat = pd.concat([df_patent_consolidated,

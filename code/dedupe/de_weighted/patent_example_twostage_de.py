@@ -69,7 +69,7 @@ logging.basicConfig(level=log_level)
 input_file_dir = os.path.expanduser('~/Documents/psClean/data/dedupe_input/person_records')
 patent_file_dir = os.path.expanduser('~/Documents/psClean/data/dedupe_input/person_patent')
 this_date = datetime.datetime.now().strftime('%Y-%m-%d')
-country = 'gb'
+country = 'de'
 
 
 input_file = input_file_dir + '/' + 'dedupe_input_' + country + '.csv'
@@ -91,7 +91,7 @@ input_df.Name.fillna('', inplace=True)
 # input_df = input_df[:30000]
 
 rounds = [1]#, 2]
-recall_weights = [2]#, 1.5]
+recall_weights = [1.5]#, 1.5]
 ppcs = [0.001]#, 0.001]
 dupes = [5]#, 5]
 twostage = [False]#, True]
@@ -178,7 +178,7 @@ for idx, r in enumerate(rounds):
 
     else:
         # To train dedupe, we feed it a random sample of records.
-        data_sample = dedupe.dataSample(data_d, 600000)
+        data_sample = dedupe.dataSample(data_d, 3 * input_df.shape[0])
         # Define the fields dedupe will pay attention to
         fields = {
             'Name': {'type': 'String', 'Has Missing':True},

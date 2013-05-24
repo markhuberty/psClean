@@ -69,7 +69,7 @@ logging.basicConfig(level=log_level)
 input_file_dir = os.path.expanduser('~/Documents/psClean/data/dedupe_input/person_records')
 patent_file_dir = os.path.expanduser('~/Documents/psClean/data/dedupe_input/person_patent')
 this_date = datetime.datetime.now().strftime('%Y-%m-%d')
-country = 'gb'
+country = 'sk'
 
 
 input_file = input_file_dir + '/' + 'dedupe_input_' + country + '.csv'
@@ -88,11 +88,23 @@ input_df.Lat.fillna('0.0', inplace=True)
 input_df.Lng.fillna('0.0', inplace=True)
 input_df.Name.fillna('', inplace=True)
 
+re_mid = re.compile(' (ing|phd) ')
+re_end = re.compile(' (phd|ing)$')
+re_end_coauthor = re.compile('\s(phd|ing)?=*')
+
+ing_names = [re_mid.sub(' ', n) for n in input_df.Name]
+ing_names = [re_end.sub(' ', n) for n in ing_names]
+
+ing_coauthors = [re_end_coauthor.sub(' ', c) for c in input_df.Coauthor]
+
+
+input_df['Name'] = ing_names
+input_df['Coauthor'] = ing_coauthors
 # input_df = input_df[:30000]
 
 rounds = [1]#, 2]
-recall_weights = [2]#, 1.5]
-ppcs = [0.001]#, 0.001]
+recall_weights = [1.5]#, 1.5]
+ppcs = [0.01]#, 0.001]
 dupes = [5]#, 5]
 twostage = [False]#, True]
 #dupes = [10, 5, 1]
