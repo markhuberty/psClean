@@ -127,7 +127,7 @@ eu27 = ['at',
 inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]
 root_dir = inputs[0]
 
-cluster_ids = ['cluster_id_r1', 'cluster_id_r2']
+cluster_ids = ['cluster_id_r1']#, 'cluster_id_r2']
 
 id_precision = []
 id_recall = []
@@ -143,7 +143,7 @@ cluster_label = []
 
 for cluster_id in cluster_ids:
     for country in eu27:
-        input_dir = os.path.expanduser(root_dir + country + '/')
+        input_dir = os.path.expanduser(root_dir + country + '_weighted/')
 
         # Define the input filenames
         dedupe_han = input_dir + 'dedupe_han_map.csv'
@@ -222,7 +222,7 @@ for cluster_id in cluster_ids:
         l2_patent_recall.append(l2_overall_recall)
         l2_patent_precision.append(l2_overall_precision)
 
-        df_dedupe = df_leuven[['Person', 'cluster_id_r1', 'cluster_id_r2']].drop_duplicates()
+        df_dedupe = df_leuven[['Person', 'cluster_id_r1']].drop_duplicates()
         n_pid = len(df_dedupe.Person.drop_duplicates())
         n_id1 = len(df_dedupe.cluster_id_r1.drop_duplicates())
         #n_id2 = len(df_dedupe.cluster_id_r2.drop_duplicates())

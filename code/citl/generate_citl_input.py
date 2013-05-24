@@ -4,7 +4,7 @@ sys.path.append('/home/markhuberty/Documents/dedupe/examples/patent_example')
 import patent_util
 
 citl_file_root = '../../data/citl_data/geocoded/citl_geocoded_%s.csv'
-patent_file_root = '../dedupe/%s/patstat_output.csv'
+patent_file_root = '../dedupe/%s_weighted/patstat_output.csv'
 
 
 eu27 = ['at',
@@ -52,7 +52,7 @@ for country in eu27:
     # Homogenize and write out
     df_citl = df_citl.drop_duplicates()
 
-    df_patent = df_patent[['cluster_id_r2', 'Name', 'Lat', 'Lng']]
+    df_patent = df_patent[['cluster_id_r1', 'Name', 'Lat', 'Lng']]
 
     cluster_agg_dict = {'Name': patent_util.consolidate_unique,
                         'Lat': patent_util.consolidate_geo,
@@ -60,17 +60,20 @@ for country in eu27:
                         }
 
     df_patent_consolidated = patent_util.consolidate(df_patent,
-                                                     'cluster_id_r2',
+                                                     'cluster_id_r1',
                                                      cluster_agg_dict
                                                      )
 
 
     df_patent_consolidated.columns = ['lat', 'lng', 'name']
     df_patent_consolidated['source'] = 'patstat'
+    df_patent_consolidated['country'] = country
+    df_patent_consolidated['id'] = df_patent_consolidated.index
 
 
-    df_citl = df_citl[['accountholder', 'lat', 'lng']]
-    df_citl.columns = ['name', 'lat', 'lng']
+    df_citl = df_citl[['accountholder', 'lat', 'lng', 'installationidentifier']]
+    df_citl.columns = ['name', 'lat', 'lng', 'id']
+    df_citl['country'] = country
     df_citl['source'] = 'citl'
 
     df_concat = pd.concat([df_patent_consolidated,
