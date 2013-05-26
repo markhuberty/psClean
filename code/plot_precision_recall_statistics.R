@@ -110,7 +110,8 @@ plot.pr <- ggplot(df.pr.cast,
   geom_text() +
   scale_x_continuous("Recall") +
   scale_y_continuous("Precision") +
-  scale_colour_discrete("Reference unit and dataset")
+  scale_colour_discrete("Reference unit and dataset") +
+  facet_wrap(~ val, scales="fixed")
 print(plot.pr)
 ggsave(plot.pr,
        file="./figures/dedupe_precision_recall.pdf",
@@ -118,14 +119,66 @@ ggsave(plot.pr,
        height=8
        )
 
+df.pr.melt$level <- ifelse(grepl("id", df.pr.melt$variable),
+                           "ID",
+                           ifelse(grepl("l1", df.pr.melt$variable),
+                                  "L1",
+                                  "L2"
+                                  )
+                           )
+df.pr.melt$val <- ifelse(grepl("patent", df.pr.melt$val), "patent", "id")
+df.pr.cast <- cast(df.pr.melt, X + val + cluster_label + type ~ level)
+
+df.pr.cast$type <- ifelse(df.pr.cast$type=="precision", "Precision", "Recall")
+
+plot.pr.l1.l2 <- ggplot(df.pr.cast,
+                        aes(x=L1,
+                            y=L2,
+                            label=X
+                            )
+                        ) +
+  geom_text(size=4) +
+  facet_wrap(~ type, scales="free") +
+  scale_x_continuous("Leuven Level 1 Patent") +
+  scale_y_continuous("Leuven Level 2 Patent")
+print(plot.pr.l1.l2)
+ggsave(plot.pr.l1.l2,
+       file="./figures/level1_level2_precision_recall.pdf"
+       )
 
 df.pr <- df.pr[df.pr$cluster_label == "cluster_id_r1",]
 df.pr <- df.pr[,-2]
 
 # assumes be, it, fr, es, nl, dk, fi
-weights.vec <- c(1.5, 4, 1.5, 1.5, 3, 1.5, 1.5)
+# weights.vec <- c(1.5, 4, 1.5, 1.5, 3, 1.5, 1.5)
+weights <- c("at" = 3,
+             "be" = 1.5,
+             "it" = 4,
+             "fr" = 1.5,
+             "es" = 1.5,
+             "nl" = 3,
+             "dk" = 1.5,
+             "fi" = 1.5,
+             "de" = 1.5,
+             "ro" = 3,
+             "si" = 1,
+             "pl" = 4,
+             "lt" = 1.5,
+             "lv" = 1.5,
+             "ee" = 1.5,
+             "ie" = 3,
+             "cz" = 1.5,
+             "gb" = 2,
+             "pt" = 1.5,
+             "se" = 1.5,
+             "bg" = 1.5,
+             "hu" = 3,
+             "lu" = 1,
+             "sk" = 1.5
+             )
 
-df.pr$pr.wt <- weights.vec
+df.weights <- data.frame(names(weights), weights)
+df.pr <- merge(df.pr, df.weights, by.x="X", by.y="names.weights.")
 names(df.pr) <- c("Country", "ID precision", "ID recall", "L1 patent precision",
                   "L1 patent recall", "L2 patent precision", "L2 patent recall", "Precision-Recall weights"
                   )
@@ -133,7 +186,7 @@ df.pr$Country <- toupper(df.pr$Country)
 
 tab.pr <- xtable(df.pr,
                  label="tab:pr",
-                 caption="Precision and recall results by country for the \\texttt{dedupe} output. ID values measure the person-level performance, relative to hand-matched Leuven Level 2 results. Patent data measure the accuracy of assignment of patents to unique individuals. Results are shown for comparison with both the Leuven level 1 (L1) and hand-matched level 2 (L2) datasets. Precision-recall weights refer to the settings used for rounds 1 and 2 of disambiguation for each country."
+                 caption="Precision and recall results by country for the \\texttt{dedupe} output. ID values measure the person-level performance, relative to hand-matched Leuven Level 2 results. Patent data measure the accuracy of assignment of patents to unique individuals. Results are shown for comparison with both the Leuven level 1 (L1) and hand-matched level 2 (L2) datasets. Precision-recall weights refer to the settings used for rounds 1 and 2 of disambiguation for each country. Countries missing precision and recall data had no corresponding Leuven Level 2 IDs in the dataset."
                  )
 print(tab.pr,
       file="./tables/tab_precision_recall.tex",
