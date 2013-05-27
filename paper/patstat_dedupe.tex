@@ -355,7 +355,7 @@ both the blocking strategy and the criteria for identifying
 duplicates, \texttt{dedupe} helps account for the two problems created
 by the variability of the PATSTAT data: the lack of standardized
 formatting (and hence difficulty of blocking given a pre-specified
-ruleset) and the variation in match criteria owing to cross-national
+rule set) and the variation in match criteria owing to cross-national
 differences in data quality, name homogeneity, and other factors.
 
 Selection of valid distance metrics for computing the similarity of
@@ -388,7 +388,7 @@ significant name variation to be lumped together, without also
 over-aggregating individuals. We implement this with an interaction
 term between the string distance between names, and the inverse of the
 differences in patent counts. The complete record distance specification
-is described in Table \ref{tab:dist-metrics}
+is described in Table \ref{tab:dist-metrics}.
 
 
 %% Problem--need some selection heuristic for the p/r tradeoff, right
@@ -403,11 +403,18 @@ approach described above generates highly accurate results when
 compared with the Leuven dataset. We note that the Leuven dataset is
 not, itself, a master record of hand-disambiguated patents. Instead,
 it too is generated using a set of tuned algorithms, combined with
-some manual disambiguation. We use it here as the Leuven results
-suggest very high rates of accuracy overall. Furthermore, the Leuven
-data provide the ability to broad-based comparisons instead of narrow
-comparisons on relativly small collections of hand-curated patent
-matches.
+some manual disambiguation. The Leuven dataset provides two levels of
+disambiguation. All inventors are first consolidated using an
+extensive process of data cleaning, combined with a form of fuzzy name
+matching. Of the consolidated inventors, a subset of high-volume
+inventors are then checked by hand and consolidated further. We will
+refer to these two degrees of disambiguation as, ``Level 1'' and
+``Level 2'', respectively. We make use of the Level 2 data in
+particular as the Leuven results, presented in
+\cite{callaert2011patent}, suggest very high rates of
+accuracy. But the Leuven dataset does not represent a perfect master
+record, an issue whose implications we discuss further in section
+\ref{sec:core-countries}. 
 
 Table \ref{tab:precision-calc} illustrates how precision and recall
 were calculated in reference to the Leuven dataset. For precision each
@@ -421,8 +428,11 @@ assigned to more than one \texttt{dedupe} ID. This corresponds to the
 formal definition of \texttt{recall}: true matches as a share of true
 matches plus missed matches.
 
+Second, we discuss heuristics for choosing the optimum
+precision-recall trade off for the \texttt{dedupe} algorithm. 
+
 \begin{landscape}
-  \begin{table}[ht]
+  \begin{table}[t]
     \footnotesize
     \centering
     \begin{tabular}{l|c|c|c||c|c|c|c}
@@ -443,11 +453,29 @@ matches plus missed matches.
       reference to the Leuven dataset.}
     \label{tab:precision-calc}
   \end{table}
+
+\begin{table}[t]
+  \centering
+{\footnotesize
+  \begin{tabular}{lr}
+    Field & Distance metric \\
+    \hline
+    Name  & Learnable affine gap \\
+    Lat / Long & Haversine great circle \\
+    IPC Code & TfIdf-weighted Cosine set similarity \\
+    Coauthor & TfIdf-weighted Cosine set similarity \\
+    Patent count & $\frac{1}{\left|c_a -
+      c_b\right| + 1}$ for patent counts $c$ in
+    records $a, b$\\
+    Patent $\times$ Name & $Name \times Patent~count$ \\
+    \hline
+  \end{tabular}
+}
+  \caption{Distance metrics by field}
+  \label{tab:dist-metrics}
+\end{table}
+
 \end{landscape}
-
-
-Second, we discuss heuristics for choosing the optimum
-precision-recall tradeoff for the \texttt{dedupe} algorithm. 
 
 
 \subsection{Disambiguation of the EU-27}
@@ -455,34 +483,77 @@ precision-recall tradeoff for the \texttt{dedupe} algorithm.
 
 Testing of this single-shot disambiguation with Belgian data suggested
 that tuning the algorithm to weight recall at 1.5 times precision
-generated highly accurate results. Testing on countries other than
-Belgium showed that this setting worked well for all countries in all
+generated highly accurate results. Application of this setting to
+countries other than Belgium showed again generated highly accurate
+results in all
 but a few cases. As table \ref{tab:pr} shows, precision and recall both
-exceeded 0.95 for all cases but France, as compared with the
-hand-matched Leuven level 2 data. Moreover, these results were
+exceeded 0.95, as compared with the Level 2 data, for cases other than France, Germany, Poland, and
+Hungary. Moreover, these results were
 superior to those obtained with the inventor-patent instance approach
 taken by \cite{lai2011disambiguation}, while requiring a fraction of
-the compute time. For all but France, complete disambiguation took 2-3
+the compute time. For all but the largest countries, complete disambiguation took 2-3
 hours or less, with at most 20 minutes of human input.
+
+We emphasize that the precision and recall performance mixes two
+different kinds of potential error: first, we may under-perform Leuven
+by either failing to find instances of an individual inventor that the
+Leuven approach did; or by grouping unrelated inventors
+together. Alternatively, however, we may also do the opposite: finding
+instances of an individual that the Leuven approach missed, or
+correctly splitting records that Leuven treated as the same
+individual. We find both of these in evidence on close examination of
+the outcomes. 
+
+For instance, the table in section \ref{sec:leuven-level-2-1}, we see
+that the Netherlands operations of \textbf{Schlumberger} are split
+between its Technology and Holdings groups. All patents by
+Schlumberger in the Netherlands are thus divided among these
+subsidiaries. The \texttt{dedupe} approach correctly aggregates these
+patents together; while the Leuven approach keeps them separate.
+Similarly, in section \ref{sec:leuven-ids-clumped}, Leuven identifies
+the Lithuanian inventor \textbf{Juozas Grazulevivius} as four separate
+individuals, whereas the \texttt{dedupe} approach identifies them as
+the same. Obvious misses by \texttt{dedupe} include splitting variants
+on the Spanish inventor \texttt{Antonio Martinez Martinez} into
+separate individuals (as shown in section \ref{sec:leuven-ids-split}),
+and over-aggregating the different faculties of \textbf{Ceska Vysoko
+Ucena Technical v. Praze}, as shown in section
+\ref{sec:leuven-ids-clumped}. Hence, the performance of the
+\texttt{dedupe} algorithm in reference to the Leuven dataset mixes
+improvements to the Leuven result, mistakes, and differences in levels
+of aggregation for companies and their subsidiaries. 
+
 
 \subsection{Exploration of reasons for tuning differences}
 \label{sec:expl-reas-tuning}
 
 As the last column in table \ref{tab:pr} shows, most countries
-performed well with a standard precision-recall tradeoff. However,
-Italy and the Netherlands both benefited from choosing a tradeoff that
-heavily weighted recall over precision. These values were found
+performed well with a standard precision-recall trade off setting of
+1.5. However, a handful of other countries benefited from choosing a
+trade off that heavily weighted recall over precision. Those countries
+varied widely in size (The United Kingdom and Ireland) and economic
+history (Hungary and Italy). In each case, these values were found
 through experimentation in reference to the Leuven dataset. But for
 broad use, we wish to identify a good heuristic for selecting the
-precision-recall tradeoff ahead of time. Hence the variance in
+precision-recall trade off ahead of time. Hence the variance in
 suitable precision-recall weights by country is troubling. Implicitly,
 it suggests variance in the data that, if known, could provide a
 useful heuristic for model specification.
 
-To test this, we compute the Shannon entropy of each person characteristic
-for each country, on the assumption that more diverse countries (e.g.,
-with higher name variance) will require precision-recall weights that
-favor recall, while those with lower variance will favor precision. 
+To test this, we compute two measures of variance with respect to
+individual inventors' names and their innovation activity. First, we
+compute the Shannon entropy of the person Name
+characteristic for each country, on the assumption that more diverse
+countries (e.g., with higher name variance) will require
+precision-recall weights that favor recall, while those with lower
+variance will favor precision. 
+
+Second, we compute the share of patents
+attached to the top inventors in each country. As figure
+\ref{fig:patent-share} shows, countries in the EU-27 vary widely in
+the distribution of patent shares among inventors. Of the countries
+that benefited from higher weights on recall, all but one (the Netherlands) fell to the
+left of the median country by top innovator shares.
 
 %% Potential heuristics here:
 %% For the IDs, how much actual difference is there between names? How
@@ -581,26 +652,6 @@ favor recall, while those with lower variance will favor precision.
   \label{fig:dedupe-pr}
 \end{figure}
 
-\begin{table}[ht]
-  \centering
-{\footnotesize
-  \begin{tabular}{lr}
-    Field & Distance metric \\
-    \hline
-    Name  & Learnable affine gap \\
-    Lat / Long & Haversine great circle \\
-    IPC Code & TfIdf-weighted Cosine set similarity \\
-    Coauthor & TfIdf-weighted Cosine set similarity \\
-    Patent count & $\frac{1}{\left|c_a -
-      c_b\right| + 1}$ for patent counts $c$ in
-    records $a, b$\\
-    Patent $\times$ Name & $Name \times Patent~count$ \\
-    \hline
-  \end{tabular}
-}
-  \caption{Distance metrics by field}
-  \label{tab:dist-metrics}
-\end{table}
 
 \begin{landscape}
 \input{../tables/tab_precision_recall}
@@ -699,11 +750,18 @@ These results point to the potential for rapid, scaleable
 disambiguation of large patent databases with relatively little human
 input. Improved data quality or completeness would help improve on
 these results. In particular, address coverage remains highly
-variable. But beyond this improvement, automatically
-locating innovators in the same region remains difficult. The lack of
-address data poses particular difficulties for individuals with common
-names, who otherwise may be difficult to distinguish on the basis of
-name and innovation data alone.
+variable. At a minimum, however, the techniques demonstrated here
+appear a natural complement to the extensive data cleaning effort
+undertaken by Leuven, which may permit even higher levels of precision
+and recall and eliminate the need for ongoing and intensive human
+coding.
+
+Nevertheless, data quality continues to pose substantial barriers to
+progress. The lack of address in particular deprives analysts of a
+valuable means of disambiguating individuals with common
+names. Improving address data coverage is obviously beyond the purview
+of the OECD. Instead, improvements will rely on national patent
+offices making concerted efforts
 
 
 % \section{Conclusions}
@@ -790,7 +848,7 @@ addresses at the city level:
   \item Compute the Levenshtein ratio between the city and each n-gram
   \item Return the nearest-neighbor that exceeds some threshold $\tau$
   \end{enumerate}
-\item Sort the set of all best matches by Levenstein ratio, breaking
+\item Sort the set of all best matches by Levenshtein ratio, breaking
   ties by (in order) the ending index of the match in the address
   string (closer to the end is better); and city population (higher is
   better)
@@ -834,11 +892,11 @@ names:
   \begin{enumerate}
   \item Check for a potential two-letter country code at the end of
     the string. If that country is not found, or is the same as the
-    country of the patent filing, geocode for that country; else
-    geocode for the alternate country
+    country of the patent filing, geo-code for that country; else
+    geo-code for the alternate country
   \item Remove the country code, if found, from the address component
-  \item Geocode the address component using the appropriate fuzzy
-    geocoding algorithm as described in \ref{sec:fuzzy-geocoding}
+  \item Geo-code the address component using the appropriate fuzzy
+    geo-coding algorithm as described in \ref{sec:fuzzy-geocoding} 
   \end{enumerate}
 \end{enumerate}
 
@@ -854,11 +912,11 @@ This algorithm will miss geographic content in names that have no
 street code. For instance ``John Smith Chicago'' will not return a
 valid latitude / longitude, while ``John Smith 1234 N. Clark
 St. Chicago'' will. This is an unavoidable consequence of trying to
-explicitly avoid false matches in names that for historic reasons
-embedded geographic data. 
+explicitly avoid false matches in names that, for historic reasons,
+embed geographic data. 
 
 
-\subsection{Sample name output}
+\section{Sample name output}
 \label{sec:sample-name-output}
 
 This section provides tables with sample ID matching between the
@@ -869,31 +927,31 @@ ID consolidated multiple Leuven IDs. ``Splitting'' tables indicate the
 reverse: where names consolidated to a single Leuven ID were split
 across multiple \texttt{dedupe} IDs. 
 
-\subsubsection{Leuven IDs split by \texttt{dedupe} }
+\subsection{Leuven IDs split by \texttt{dedupe} }
 \label{sec:leuven-ids-split}
 \footnotesize
 \input{../tables/dedupe_leuven_splitting}
 
-\subsubsection{Leuven IDs clumped by \texttt{dedupe}}
+\subsection{Leuven IDs clumped by \texttt{dedupe}}
 \label{sec:leuven-ids-clumped}
 
 \footnotesize
 \input{../tables/dedupe_leuven_clumping}
 
 
-\subsubsection{Leuven Level 2 IDs split by \texttt{dedupe}}
+\subsection{Leuven Level 2 IDs split by \texttt{dedupe}}
 \label{sec:leuven-level-2}
 
 \footnotesize
 \input{../tables/dedupe_leuven_splitting_l2}
 
-\subsubsection{Leuven Level 2 IDs clumped by \texttt{dedupe}}
+\subsection{Leuven Level 2 IDs clumped by \texttt{dedupe}}
 \label{sec:leuven-level-2-1}
 
 \footnotesize
 \input{../tables/dedupe_leuven_clumping_l2}
 
-% Proportion w/ raw addresses, vs. w/ latlong data after geocoding
+% Proportion w/ raw addresses, vs. w/ latlong data after geo-coding
 % names
 % Proportion w/ name not null; proportion w/ coauthor; proportion w/ class
 % %%  TODO: run the comparison on the original cleaned_ files, and
@@ -928,7 +986,7 @@ across multiple \texttt{dedupe} IDs.
 % one word long, we can assume they belong to the same name)
 % Amma
 
-
+\normalsize
 \bibliography{/home/markhuberty/bibs/patstat_dedupe}
 \bibliographystyle{apalike}
 \end{document}
