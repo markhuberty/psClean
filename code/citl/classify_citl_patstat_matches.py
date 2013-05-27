@@ -85,6 +85,8 @@ svc = SVC()
 svc_fit = svc.fit(dist_mat, np.array(is_match))
 svc_pred = svc_fit.predict(dist_mat)
 svc_score = cv.cross_val_score(svc, dist_mat, np.array(is_match), cv=10)
+mean_svc_score = np.mean(svc_score)
+sd_svc_score = np.std(svc_score)
 
 pred_mat = df_match[['lev_name_dist', 'jac_name_dist', 'geo_dist']]
 pred_mat.geo_dist.fillna(0, inplace=True)
