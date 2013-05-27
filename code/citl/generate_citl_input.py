@@ -1,5 +1,8 @@
 import pandas as pd
 import sys
+import os
+import errno
+
 sys.path.append('/home/markhuberty/Documents/dedupe/examples/patent_example')
 import patent_util
 
@@ -37,6 +40,8 @@ eu27 = ['at',
         ]
 
 for country in eu27:
+    print country
+
     citl_file = citl_file_root % country.upper()
     patent_file = patent_file_root % country
 
@@ -81,6 +86,12 @@ for country in eu27:
                           ignore_index=True
                           )
 
+    try:
+        os.mkdir('./%s' % country)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+        
     output_file = './%s/%s_citl_input.csv' %(country, country)
     df_concat.to_csv(output_file,
                      index=False
