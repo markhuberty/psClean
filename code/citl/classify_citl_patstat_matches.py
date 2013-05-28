@@ -81,6 +81,13 @@ is_match, dists = label_matches(df_match.citl_name,
 
 dist_mat = np.array(dists)
 
+## Insert sector classifier here.
+## (1) return more stuff (i.e., ipc codes and CITL sectors or row IDs so we can get them) from label_matches
+## (2) train a multiclass classifier to map IPCs:sectors. Would be useful to collapse "combustion" into a single category for that purpose
+## (3) then take the distance metric is if(same_sector) TRUE else FALSE
+## (4) then train the SVC w. the same sector metric.
+## For (1), to do the doc-term stuff, just (a) load up the data frame and then (b)transform it into a list of strings, replacing the delimiter w. ** along the way
+
 svc = SVC()
 svc_fit = svc.fit(dist_mat, np.array(is_match))
 svc_pred = svc_fit.predict(dist_mat)

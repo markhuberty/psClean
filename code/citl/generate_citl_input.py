@@ -52,11 +52,12 @@ for country in eu27:
     # Homogenize and write out
     df_citl = df_citl.drop_duplicates()
 
-    df_patent = df_patent[['cluster_id_r1', 'Name', 'Lat', 'Lng']]
+    df_patent = df_patent[['cluster_id_r1', 'Name', 'Lat', 'Lng', 'Class']]
 
     cluster_agg_dict = {'Name': patent_util.consolidate_unique,
                         'Lat': patent_util.consolidate_geo,
                         'Lng': patent_util.consolidate_geo,
+                        'Class': patent_util.consolidate_set
                         }
 
     df_patent_consolidated = patent_util.consolidate(df_patent,
@@ -64,15 +65,15 @@ for country in eu27:
                                                      cluster_agg_dict
                                                      )
 
-
-    df_patent_consolidated.columns = ['lat', 'lng', 'name']
+    ## Here, need to expand the returned data to include the Class
+    df_patent_consolidated.columns = ['class', 'lat', 'lng', 'name']
     df_patent_consolidated['source'] = 'patstat'
     df_patent_consolidated['country'] = country
     df_patent_consolidated['id'] = df_patent_consolidated.index
 
-
-    df_citl = df_citl[['accountholder', 'lat', 'lng', 'installationidentifier']]
-    df_citl.columns = ['name', 'lat', 'lng', 'id']
+    ## Here, need to expand the returned data to include the mainactivitytypecodelookup
+    df_citl = df_citl[['accountholder', 'lat', 'lng', 'installationidentifier', 'mainactivitytypecodelookup']]
+    df_citl.columns = ['name', 'lat', 'lng', 'id', 'class']
     df_citl['country'] = country
     df_citl['source'] = 'citl'
 
