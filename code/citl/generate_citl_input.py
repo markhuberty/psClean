@@ -66,14 +66,14 @@ for country in eu27:
                                                      )
 
     ## Here, need to expand the returned data to include the Class
-    df_patent_consolidated.columns = ['class', 'lat', 'lng', 'name']
+    df_patent_consolidated.columns = ['lat', 'lng', 'name', 'sector']
     df_patent_consolidated['source'] = 'patstat'
     df_patent_consolidated['country'] = country
     df_patent_consolidated['id'] = df_patent_consolidated.index
 
     ## Here, need to expand the returned data to include the mainactivitytypecodelookup
     df_citl = df_citl[['accountholder', 'lat', 'lng', 'installationidentifier', 'mainactivitytypecodelookup']]
-    df_citl.columns = ['name', 'lat', 'lng', 'id', 'class']
+    df_citl.columns = ['name', 'lat', 'lng', 'id', 'sector']
     df_citl['country'] = country
     df_citl['source'] = 'citl'
 
