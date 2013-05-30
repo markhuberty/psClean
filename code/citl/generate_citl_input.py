@@ -52,12 +52,13 @@ for country in eu27:
     # Homogenize and write out
     df_citl = df_citl.drop_duplicates()
 
-    df_patent = df_patent[['cluster_id_r1', 'Name', 'Lat', 'Lng', 'Class']]
+    df_patent = df_patent[['cluster_id_r1', 'Name', 'Lat', 'Lng', 'Class', 'patent_ct']]
 
     cluster_agg_dict = {'Name': patent_util.consolidate_unique,
                         'Lat': patent_util.consolidate_geo,
                         'Lng': patent_util.consolidate_geo,
-                        'Class': patent_util.consolidate_set
+                        'Class': patent_util.consolidate_set,
+                        'patent_ct': np.sum
                         }
 
     df_patent_consolidated = patent_util.consolidate(df_patent,
@@ -66,7 +67,7 @@ for country in eu27:
                                                      )
 
     ## Here, need to expand the returned data to include the Class
-    df_patent_consolidated.columns = ['lat', 'lng', 'name', 'sector']
+    df_patent_consolidated.columns = ['lat', 'lng', 'name', 'sector', 'patent_ct']
     df_patent_consolidated['source'] = 'patstat'
     df_patent_consolidated['country'] = country
     df_patent_consolidated['id'] = df_patent_consolidated.index
@@ -76,6 +77,7 @@ for country in eu27:
     df_citl.columns = ['name', 'lat', 'lng', 'id', 'sector']
     df_citl['country'] = country
     df_citl['source'] = 'citl'
+    df_citl['patent_ct'] = 'NA'
 
     df_concat = pd.concat([df_patent_consolidated,
                            df_citl],
