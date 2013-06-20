@@ -16,12 +16,12 @@ Assumes the following fields in each file:
 (leuven) person_id, hrm_l2_id, hrm_level
 """
 
+import MySQLdb
 import os
 import pandas as pd
 import pandas.io.sql as psql
 import string
 import sys
-import MySQLdb
 
 db=MySQLdb.connect(host='localhost',
                    port = 3306,
@@ -33,10 +33,8 @@ db=MySQLdb.connect(host='localhost',
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'wb', 0)
 
 ## Get the filenames off the command line
-## NOTE: assumes that the fung outputs have
-## already been processed with postprocess_fung_output.py
 
-## Command line should be output, country, destination
+## Command line should be dedupe file, country, output_dir
 inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]
 dedupe_output_file = inputs[0]
 country = inputs[1]
