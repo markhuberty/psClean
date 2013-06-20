@@ -6,20 +6,36 @@
 ## Copyright (c) 2012-2013, Authors
 ## All rights reserved.
 ############################
-afrom IPython.parallel import Client
+from IPython.parallel import Client
 from cleanup_dicts import *
 from psCleanup import name_address_dict_list, coauth_dict_list, legal_regex
 import MySQLdb
 import csv
 import gc
 import itertools as it
-import numpy
+import numpy as np
 import os
 import pandas as pd
 import pandas.io.sql as psql
 import psCleanup
 import re
+import sys
 import time
+
+"""
+Command-line script to extract data from PATSTAT for disambiguation,
+and do preliminary cleaning and consolidation. Outputs one file per country,
+with one row per PATSTAT person_id.
+
+The script must be invoked with ipython, in order to take advantage of parallism on machines
+with > 1 core.
+
+Takes two command line arguments. In order:
+
+1. The destination directory for file output
+2. The number of cores to use for parallelism
+
+"""
 
 # @dview.parallel(block=True)
 # def ipc_clean_wrapper(ipc_code_list):
@@ -35,9 +51,18 @@ def myquery(query, db_connection, colnames):
      output.columns = colnames
      return output
 
+# Point the script to the correct output directory
+# Assumes the script is invoked as ipython extract_patstat_data.py <output_dir>
+inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]
+output_dir = inputs[0]
+cores = inputs[1]
+
 # Set up MySQL connection
-db=MySQLdb.connect(host='localhost', port = 3306, user='mimitam',
-                   passwd='tam_patstat2011', db = 'patstatOct2011'
+db=MySQLdb.connect(host='localhost',
+                   port=3306,
+                   user='',
+                   passwd='',
+                   db = 'patstatOct2011'
                    )
     
 # Years to group patent data by.
@@ -52,7 +77,7 @@ total_elapsed_time = 0
 # and then writes out the data to country-specific files. 
 for year in years:
      # Start the cluster for each run; clears out the memory better
-     os.system('ipcluster start -n 2 &')
+     os.system('ipcluster start -n ' + cores + ' &')
      time.sleep(60)
 
      par_client = Client()
@@ -191,7 +216,7 @@ for year in years:
      elapsed_time = end_time - start_time
      n_records = str(len(name_output))
      print 'Time elapsed for ' + year + ' and ' + \
-           n_records + ' records: ' + str(numpy.round(elapsed_time, 0))
+           n_records + ' records: ' + str(np.round(elapsed_time, 0))
 
      name_output = name_output.reset_index()
      name_output['year'] = year
@@ -205,7 +230,7 @@ for year in years:
      # Write out; if file exists, then append
      for country, group in grouped_country:
           print country
-          output_filename = 'cleaned_output_' + country + '.tsv'
+          output_filename = output_dir + 'cleaned_output_' + country + '.tsv'
           group.to_csv(output_filename, mode='a', sep='\t', header=header_bool)
 
      # Reset the data and stop the cluster

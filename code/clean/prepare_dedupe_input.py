@@ -169,6 +169,7 @@ for f in files:
     # Shorten the IPC codes to 4-digit
     ipc_codes = [md.sort_class(c, 4) for c in df['ipc_code']]
     df['ipc_code'] = ipc_codes
+
     # ascii and lowercase the coauthor data
     coauthors = md.asciidammit(df['coauthors'])
     coauthors = [c.lower() for c in coauthors]

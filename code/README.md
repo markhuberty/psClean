@@ -10,7 +10,7 @@ This directory contains the routines to extract, clean, and disambiguate invento
 Order of operations
 -------------------
 
-`psCleanup` assumes that you have PATSTAT loaded into a SQL database. The *sql* folder provides the scripts used to create and load tables for the October 2011 PATSTAT release. It may or may not work for future releases, depending on changes applied by the European Patent Office. 
+`psCleanup` assumes that you have PATSTAT loaded into a SQL database. The **sql** folder provides the scripts used to create and load tables for the October 2011 PATSTAT release. It may or may not work for future releases, depending on changes applied by the European Patent Office. 
 
 We assume the following order of operations:
 

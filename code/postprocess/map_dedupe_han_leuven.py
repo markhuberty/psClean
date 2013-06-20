@@ -1,6 +1,3 @@
-#!/usr/bin/env
-# -*- coding: utf-8 -*-
-
 """
 Command-line script for matching the fung output to the HAN
 and Leuven data and writing out the map.
@@ -25,8 +22,8 @@ import sys
 
 db=MySQLdb.connect(host='localhost',
                    port = 3306,
-                   user='markhuberty',
-                   passwd='patstat_huberty',
+                   user='',
+                   passwd='',
                    db = 'patstatOct2011'
                    )
 
