@@ -149,9 +149,7 @@ for cluster_id in cluster_ids:
         dedupe_han = input_dir + 'dedupe_han_map.csv'
         dedupe_leuven = input_dir + 'dedupe_leuven_map.csv'
         person_patent = os.path.expanduser('~/Documents/psClean/data/dedupe_input/person_patent/' + country + '_person_patent_map.csv')
-        # cluster_id = 'cluster_id_r2'
 
-        # Load the input files
         try:
             df_han = pd.read_csv(dedupe_han)
             df_leuven = pd.read_csv(dedupe_leuven)
@@ -209,9 +207,11 @@ for cluster_id in cluster_ids:
             grouped_leuven_pp_l2 = df_leuven_pp_l2[[cluster_id, 'leuven_id', 'Patent']].groupby([cluster_id, 'leuven_id'])
             leuven_l2_dedupe_patent_ct = grouped_leuven_pp_l2.size()
             grouped_leuven_l2_ct = leuven_l2_dedupe_patent_ct.groupby(level=1)
-            l2_overall_recall = np.sum(grouped_leuven_l2_ct.agg(np.max)) / float(np.sum(leuven_l2_dedupe_patent_ct))
+            l2_overall_recall = np.sum(grouped_leuven_l2_ct.agg(np.max)) / \
+                                float(np.sum(leuven_l2_dedupe_patent_ct))
             grouped_dedupe_ct = leuven_l2_dedupe_patent_ct.groupby(level=0)
-            l2_overall_precision = np.sum(grouped_dedupe_ct.agg(np.max)) / float(np.sum(leuven_l2_dedupe_patent_ct))
+            l2_overall_precision = np.sum(grouped_dedupe_ct.agg(np.max)) / \
+                                   float(np.sum(leuven_l2_dedupe_patent_ct))
 
         else:
             l2_overall_recall = 'NA'
@@ -225,10 +225,8 @@ for cluster_id in cluster_ids:
         df_dedupe = df_leuven[['Person', 'cluster_id_r1']].drop_duplicates()
         n_pid = len(df_dedupe.Person.drop_duplicates())
         n_id1 = len(df_dedupe.cluster_id_r1.drop_duplicates())
-        #n_id2 = len(df_dedupe.cluster_id_r2.drop_duplicates())
         pid_count.append(n_pid)
         id1_count.append(n_id1)
-        #id2_count.append(n_id2)
 
 
     pr_dict = {'cluster_label': cluster_label,
@@ -241,8 +239,7 @@ for cluster_id in cluster_ids:
                }
     id_dict = {'cluster_label': cluster_label,
                'patstat': pid_count,
-               'round1': id1_count#,
-               #'round2': id2_count
+               'round1': id1_count
                }
 
     pr_out = pd.DataFrame(pr_dict, index=country_index)
