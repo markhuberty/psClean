@@ -92,26 +92,26 @@ def compute_canonical_counts(df_ref, df_p, ref_cluster='leuven_id', d_cluster='c
     return out[[ref_cluster, d_cluster, 'dedupe_ct', 'ref_ct']]
 
 
-eu27 = ['at',
-        'bg',
-        'be',
-        'it',
-        'gb',
-        'fr',
-        'de',
-        'sk',
-        'se',
-        'pt',
-        'pl',
-        'hu',
-        'ie',
-        'ee',
-        'es',
-        'cy',
-        'cz',
-        'nl',
-        'si',
-        'ro',
+eu27 = [# 'at',
+        # 'bg',
+        # 'be',
+        # 'it',
+        # 'gb',
+        # 'fr',
+        # 'de',
+        # 'sk',
+        # 'se',
+        # 'pt',
+        # 'pl',
+        # 'hu',
+        # 'ie',
+        # 'ee',
+        # 'es',
+        # 'cy',
+        # 'cz',
+        # 'nl',
+        # 'si',
+        # 'ro',
         'dk',
         'lt',
         'lu',
@@ -191,7 +191,7 @@ for country in eu27:
     # cids.append('round2')
     # countries.append(country)
 
-    d1_output_file = output_dir + country + '/dedupe_leuven_patent_counts_r1.csv'
+    d1_output_file = output_dir + country + '_weighted/dedupe_leuven_patent_counts_r1.csv'
     leuven_d1.to_csv(d1_output_file)
 
     # d2_output_file = output_dir + country + '/dedupe_leuven_patent_counts_r2.csv'
