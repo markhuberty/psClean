@@ -138,6 +138,8 @@ def scale(vec):
 df_match['lev_name_dist'] = scale(df_match.lev_name_dist.values)
 df_match['jac_name_dist'] = scale(df_match.jac_name_dist.values)
 df_match['geo_dist'] = scale(df_match.geo_dist.values)
+df_match['patent_ct'] = scale(df_match.patent_ct.values)
+
 
 df_match.sort('lev_name_dist', ascending=True, inplace=True)
 
@@ -299,3 +301,23 @@ out = svc_fit.predict(pred_mat)
 df_out = pd.concat([df_match[~df_match.index.isin(exact_matches)][out==1], df_exact], ignore_index=True)
 df_out.to_csv("test_predicted_citl_matches.csv")
 
+import operator
+def count_codes_by_sector(codes, sectors):
+    out = {}
+    for c, s in zip(codes, sectors):
+        if isinstance(c, str):
+            c_split = c.split('**')
+            if s not in out:
+                out[s] = {}
+
+            for cs in c_split:
+                if cs in out[s]:
+                    out[s][cs] += 1
+                else:
+                    out[s][cs] = 1
+    
+    for s in out:
+        out[s] = sorted(out[s].iteritems(), key=operator.itemgetter(1))
+    return out
+
+test = count_codes_by_sector(df_all.ipc_codes, df_all.sector)

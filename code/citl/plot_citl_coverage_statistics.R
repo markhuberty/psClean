@@ -86,8 +86,8 @@ ggsave("./figures/citl_match_pct_overall.pdf",
 
 
 pct.match.bytype <- ddply(.data=all.citl, .variables=c("country.x", "mainactivitytypecodelookup"),
-              .fun=compute.coverage
-              )
+                          .fun=compute.coverage
+                          )
 pct.match.bytype$country <- toupper(pct.match.bytype$country)
 
 plot.pct.match.bytype <- ggplot(pct.match.bytype,
