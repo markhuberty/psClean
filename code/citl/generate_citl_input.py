@@ -2,6 +2,7 @@ import pandas as pd
 import sys
 sys.path.append('/home/markhuberty/Documents/dedupe/examples/patent_example')
 import patent_util
+import numpy as np
 
 citl_file_root = '../../data/citl_data/geocoded/citl_geocoded_%s.csv'
 patent_file_root = '../dedupe/%s_weighted/patstat_output.csv'
@@ -67,7 +68,7 @@ for country in eu27:
                                                      )
 
     ## Here, need to expand the returned data to include the Class
-    df_patent_consolidated.columns = ['lat', 'lng', 'name', 'sector', 'patent_ct']
+    df_patent_consolidated.columns = ['lat', 'patent_ct', 'lng', 'name', 'sector']
     df_patent_consolidated['source'] = 'patstat'
     df_patent_consolidated['country'] = country
     df_patent_consolidated['id'] = df_patent_consolidated.index
