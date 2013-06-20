@@ -6,7 +6,7 @@
 ## Copyright (c) 2012-2013, Authors
 ## All rights reserved.
 ############################
-from IPython.parallel import Client
+afrom IPython.parallel import Client
 from cleanup_dicts import *
 from psCleanup import name_address_dict_list, coauth_dict_list, legal_regex
 import MySQLdb
