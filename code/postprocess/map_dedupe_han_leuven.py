@@ -23,8 +23,11 @@ import string
 import sys
 import MySQLdb
 
-db=MySQLdb.connect(host='localhost', port = 3306, user='markhuberty',
-                   passwd='patstat_huberty', db = 'patstatOct2011'
+db=MySQLdb.connect(host='localhost',
+                   port = 3306,
+                   user='markhuberty',
+                   passwd='patstat_huberty',
+                   db = 'patstatOct2011'
                    )
 
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'wb', 0)
