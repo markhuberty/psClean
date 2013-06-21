@@ -32,6 +32,7 @@ import re
 import sys
 import time
 
+
 # Finally load dedupe 
 import dedupe
 from dedupe.distance import cosine
@@ -75,14 +76,16 @@ logging.basicConfig(level=log_level)
 inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]
 country = inputs[0]
 input_file_dir = inputs[1]
-patent_file_dir = inputs[2]
-recall_weight = inputs[3]
+output_file_dir = inputs[2]
+recall_weight = float(inputs[3])
 
 # Set the input / output and training files
+
+this_date = datetime.datetime.now().strftime('%Y-%m-%d')
 input_file = input_file_dir + '/' + 'dedupe_input_' + country + '.csv'
-output_file = 'patstat_output_' + this_date + '_' + country + '.csv'
-settings_file = 'patstat_settings_' + this_date + '_' + country + '.csv'
-training_file = 'patstat_training_' + this_date + '_' + country + '.csv'
+output_file = output_file_dir + '/' + 'patstat_output_' + this_date + '_' + country + '.csv'
+settings_file = 'patstat_settings_' + this_date + '_' + country + '.json'
+training_file = 'patstat_training_' + this_date + '_' + country + '.json'
 patent_file = patent_file_dir + '/' + country + '_person_patent_map.csv'
 
 ## Set the constants for blocking
@@ -116,15 +119,15 @@ else:
     # To train dedupe, we feed it a random sample of records.
     data_sample = dedupe.dataSample(data_d, 600000)
     # Define the fields dedupe will pay attention to
-    fields = {
-        'Name': {'type': 'String', 'Has Missing':True},
-        'LatLong': {'type': 'LatLong', 'Has Missing':True},
-        'Class': {'type': 'Custom', 'comparator':class_comparator},
-        'Coauthor': {'type': 'Custom', 'comparator': coauthor_comparator},
-        'patent_ct':{'type': 'Custom', 'comparator': integer_diff},
-        'patent_ct_name': {'type': 'Interaction',
-                           'Interaction Fields': ['Name', 'patent_ct']
-                           }
+    fields = {'Name': {'type': 'String', 'Has Missing':True},
+              'LatLong': {'type': 'LatLong', 'Has Missing':True},
+              'Class': {'type': 'Custom', 'comparator':class_comparator},
+              'Coauthor': {'type': 'Custom', 'comparator': coauthor_comparator},
+              'patent_ct':{'type': 'Custom', 'comparator': integer_diff},
+              'patent_ct_name': {'type': 'Interaction',
+                                 'Interaction Fields': ['Name', 'patent_ct']
+                                 }
+              }
 
     # Create a new deduper object and pass our data model to it.
     deduper = dedupe.Dedupe(fields)
@@ -181,7 +184,7 @@ if not blocker:
     sys.exit()
 
 time_block_weights = time.time()
-print 'Learned blocking weights in', time_block_weights - start_time 'seconds'
+print 'Learned blocking weights in', time_block_weights - time_start, 'seconds'
 
 # Save weights and predicates to disk.
 # If the settings file exists, we will skip all the training and learning
@@ -258,7 +261,7 @@ for df_idx in input_df.index:
         if orig_cluster in clustered_cluster_map:
             cluster_index.append(clustered_cluster_map[orig_cluster])
         else:
-            clustered_cluster_map[orig_cluster] = cluster_counter
+            clustered_cluster_map[orig_cluster] = max_cluster_id
             cluster_index.append(max_cluster_id) #cluster_counter)
             max_cluster_id += 1
             # print cluster_counter
