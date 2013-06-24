@@ -340,15 +340,22 @@ PATSTAT data has both inconsistently-formatted data and missing data,
 and consequently lacks the standardization that allows rigid blocking
 rules to perform well. 
 
-The \texttt{dedupe} library instead selects blocking approaches from a
-stable of possible blocking ``predicates'' based on user-encoded
+The \texttt{dedupe} library instead learns the best blocking approach
+from user-labeled data. During disambiguation, \texttt{dedupe}
+presents the user with a stream of potential matched pairs. Pairs are
+selected to focus on those pairs for which \texttt{dedupe} is most
+uncertain about the match. The user labels these pairs as ``match'',
+``nonmatch'', or ``ambiguous''.
+
+The blocker then selects blocking approaches from a
+stable of possible blocking ``predicates'' based on this user-labeled
 data. Predicates go beyond simple
 heuristics to include more variable options like ``any consecutive
 three letters'' or ``same latitude/longitude grid cell''. This form of
 blocking can successfully block strings containing the same word
 entities even if those entities are in different orders. Blocks are
 constructed from these predicates to maximize the probability that
-matching records are placed in the same block together. Using that
+records labeled as matches are placed in the same block together. Using that
 same labeled data, \texttt{dedupe} then learns a set of optimum
 comparison thresholds for accepting or rejecting matches. By learning
 both the blocking strategy and the criteria for identifying
@@ -398,7 +405,7 @@ is described in Table \ref{tab:dist-metrics}.
 \label{sec:results}
 
 
-We present results two results. First, we show that the disambiguation
+We present two results. First, we show that the disambiguation
 approach described above generates highly accurate results when
 compared with the Leuven dataset. We note that the Leuven dataset is
 not, itself, a master record of hand-disambiguated patents. Instead,
@@ -422,11 +429,11 @@ were calculated in reference to the Leuven dataset. For precision each
 than one Leuven ID. Using the terminology preferred by
 \cite{lai2011disambiguation}, we ``clump'' Leuven IDs together. This
 corresponds to the formal definition of \texttt{precision}: true
-matches as a share of all matches. Conversely, we may also ``split''
+retrieved matches as a share of all retrieved matches. Conversely, we may also ``split''
 Leuven IDs: the PATSTAT IDs assigned to a single Leuven ID may be
 assigned to more than one \texttt{dedupe} ID. This corresponds to the
-formal definition of \texttt{recall}: true matches as a share of true
-matches plus missed matches.
+formal definition of \texttt{recall}: true retrieved matches as a
+share of all retrieved matches.
 
 Second, we discuss heuristics for choosing the optimum
 precision-recall trade off for the \texttt{dedupe} algorithm. 
@@ -535,7 +542,7 @@ varied widely in size (The United Kingdom and Ireland) and economic
 history (Hungary and Italy). In each case, these values were found
 through experimentation in reference to the Leuven dataset. But for
 broad use, we wish to identify a good heuristic for selecting the
-precision-recall trade off ahead of time. Hence the variance in
+precision-recall trade off \textit{ex ante}. Hence the variance in
 suitable precision-recall weights by country is troubling. Implicitly,
 it suggests variance in the data that, if known, could provide a
 useful heuristic for model specification.
@@ -811,7 +818,8 @@ completeness. Second, some address data are included in the person or
 company name, rather than in the address field. Third, for European
 names in particular, names themselves may contain geographic
 references that do not actually represent the individual's
-location. For instance, variants on the Germanic construct ``van +
+location. For instance, last name variants on the construct ``from + place'', as
+in ``van/von/de/le/etc +
 \texttt{location}'' may encode the place of birth of a distant
 ancestor, while the person themselves now lives quite far away. Hence
 in examining names for address data, we must discriminate between true

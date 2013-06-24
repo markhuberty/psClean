@@ -52,7 +52,7 @@ def myquery(query, db_connection, colnames):
      return output
 
 # Point the script to the correct output directory
-# Assumes the script is invoked as ipython extract_patstat_data.py <output_dir>
+# Assumes the script is invoked as ipython extract_patstat_data.py <output_dir> <cores>
 inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]
 output_dir = inputs[0]
 cores = inputs[1]
