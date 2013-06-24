@@ -86,7 +86,12 @@ input_file = input_file_dir + '/' + 'dedupe_input_' + country + '.csv'
 output_file = output_file_dir + '/' + 'patstat_output_' + this_date + '_' + country + '.csv'
 settings_file = 'patstat_settings_' + this_date + '_' + country + '.json'
 training_file = 'patstat_training_' + this_date + '_' + country + '.json'
-patent_file = patent_file_dir + '/' + country + '_person_patent_map.csv'
+
+print input_file
+print output_file
+print settings_file
+print training_file
+print recall_weight
 
 ## Set the constants for blocking
 ppc=0.001
@@ -117,7 +122,7 @@ if os.path.exists(settings_file):
 
 else:
     # To train dedupe, we feed it a random sample of records.
-    data_sample = dedupe.dataSample(data_d, 600000)
+    data_sample = dedupe.dataSample(data_d, 3 * input_df.shape[0])
     # Define the fields dedupe will pay attention to
     fields = {'Name': {'type': 'String', 'Has Missing':True},
               'LatLong': {'type': 'LatLong', 'Has Missing':True},
@@ -198,7 +203,8 @@ del full_data
 
 # Load all the original data in to memory and place
 # them in to blocks. Return only the block_id: unique_id keys
-blocking_map = patent_util.return_block_map(data_d, blocker)
+#blocking_map = patent_util.return_block_map(data_d, blocker)
+blocked_data = dedupe.blockData(data_d, blocker)
 keys_to_block = [k for k in blocking_map if len(blocking_map[k]) > 1]
 print '# Blocks to be clustered: %s' % len(keys_to_block)
 
