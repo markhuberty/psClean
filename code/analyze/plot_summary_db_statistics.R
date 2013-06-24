@@ -34,13 +34,13 @@ plot.ratio.line <- ggplot(df.dedupe.melt,
                           aes(x=country,
                               y=value,
                               group=variable,
-                              linetype=variable
+                              shape=variable
                               )
                           ) +
-  geom_line() +
+  geom_point() +
   scale_x_discrete("Country") +
   scale_y_continuous("Percent complete records") +
-  scale_linetype("Field")
+  scale_shape("Field")
 print(plot.ratio.line)
 ggsave(plot.ratio.line,
        filename="../figures/dedupe_data_summary.pdf",

@@ -531,36 +531,36 @@ improvements to the Leuven result, mistakes, and differences in levels
 of aggregation for companies and their subsidiaries. 
 
 
-\subsection{Exploration of reasons for tuning differences}
-\label{sec:expl-reas-tuning}
+% \subsection{Exploration of reasons for tuning differences}
+% \label{sec:expl-reas-tuning}
 
-As the last column in table \ref{tab:pr} shows, most countries
-performed well with a standard precision-recall trade off setting of
-1.5. However, a handful of other countries benefited from choosing a
-trade off that heavily weighted recall over precision. Those countries
-varied widely in size (The United Kingdom and Ireland) and economic
-history (Hungary and Italy). In each case, these values were found
-through experimentation in reference to the Leuven dataset. But for
-broad use, we wish to identify a good heuristic for selecting the
-precision-recall trade off \textit{ex ante}. Hence the variance in
-suitable precision-recall weights by country is troubling. Implicitly,
-it suggests variance in the data that, if known, could provide a
-useful heuristic for model specification.
+% As the last column in table \ref{tab:pr} shows, most countries
+% performed well with a standard precision-recall trade off setting of
+% 1.5. However, a handful of other countries benefited from choosing a
+% trade off that heavily weighted recall over precision. Those countries
+% varied widely in size (The United Kingdom and Ireland) and economic
+% history (Hungary and Italy). In each case, these values were found
+% through experimentation in reference to the Leuven dataset. But for
+% broad use, we wish to identify a good heuristic for selecting the
+% precision-recall trade off \textit{ex ante}. Hence the variance in
+% suitable precision-recall weights by country is troubling. Implicitly,
+% it suggests variance in the data that, if known, could provide a
+% useful heuristic for model specification.
 
-To test this, we compute two measures of variance with respect to
-individual inventors' names and their innovation activity. First, we
-compute the Shannon entropy of the person Name
-characteristic for each country, on the assumption that more diverse
-countries (e.g., with higher name variance) will require
-precision-recall weights that favor recall, while those with lower
-variance will favor precision. 
+% To test this, we compute two measures of variance with respect to
+% individual inventors' names and their innovation activity. First, we
+% compute the Shannon entropy of the person Name
+% characteristic for each country, on the assumption that more diverse
+% countries (e.g., with higher name variance) will require
+% precision-recall weights that favor recall, while those with lower
+% variance will favor precision. 
 
-Second, we compute the share of patents
-attached to the top inventors in each country. As figure
-\ref{fig:patent-share} shows, countries in the EU-27 vary widely in
-the distribution of patent shares among inventors. Of the countries
-that benefited from higher weights on recall, all but one (the Netherlands) fell to the
-left of the median country by top innovator shares.
+% Second, we compute the share of patents
+% attached to the top inventors in each country. As figure
+% \ref{fig:patent-share} shows, countries in the EU-27 vary widely in
+% the distribution of patent shares among inventors. Of the countries
+% that benefited from higher weights on recall, all but one (the Netherlands) fell to the
+% left of the median country by top innovator shares.
 
 %% Potential heuristics here:
 %% For the IDs, how much actual difference is there between names? How
