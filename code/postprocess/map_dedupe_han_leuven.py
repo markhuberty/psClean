@@ -20,16 +20,18 @@ import pandas.io.sql as psql
 import string
 import sys
 
+
+## Get the filenames off the command line
+
 db=MySQLdb.connect(host='localhost',
                    port = 3306,
-                   user='',
-                   passwd='',
+                   user='markhuberty',
+                   passwd='patstat_huberty',
                    db = 'patstatOct2011'
                    )
 
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'wb', 0)
 
-## Get the filenames off the command line
 
 ## Command line should be dedupe file, country, output_dir
 inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]

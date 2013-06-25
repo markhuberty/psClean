@@ -32,6 +32,7 @@ import re
 import sys
 import time
 
+
 # Finally load dedupe 
 import dedupe
 from dedupe.distance import cosine
@@ -75,15 +76,22 @@ logging.basicConfig(level=log_level)
 inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]
 country = inputs[0]
 input_file_dir = inputs[1]
-patent_file_dir = inputs[2]
-recall_weight = inputs[3]
+output_file_dir = inputs[2]
+recall_weight = float(inputs[3])
 
 # Set the input / output and training files
+
+this_date = datetime.datetime.now().strftime('%Y-%m-%d')
 input_file = input_file_dir + '/' + 'dedupe_input_' + country + '.csv'
-output_file = 'patstat_output_' + this_date + '_' + country + '.csv'
-settings_file = 'patstat_settings_' + this_date + '_' + country + '.csv'
-training_file = 'patstat_training_' + this_date + '_' + country + '.csv'
-patent_file = patent_file_dir + '/' + country + '_person_patent_map.csv'
+output_file = output_file_dir + '/' + 'patstat_output_' + this_date + '_' + country + '.csv'
+settings_file = 'patstat_settings_' + this_date + '_' + country + '.json'
+training_file = 'patstat_training_' + this_date + '_' + country + '.json'
+
+print input_file
+print output_file
+print settings_file
+print training_file
+print recall_weight
 
 ## Set the constants for blocking
 ppc=0.001
@@ -114,17 +122,17 @@ if os.path.exists(settings_file):
 
 else:
     # To train dedupe, we feed it a random sample of records.
-    data_sample = dedupe.dataSample(data_d, 600000)
+    data_sample = dedupe.dataSample(data_d, 3 * input_df.shape[0])
     # Define the fields dedupe will pay attention to
-    fields = {
-        'Name': {'type': 'String', 'Has Missing':True},
-        'LatLong': {'type': 'LatLong', 'Has Missing':True},
-        'Class': {'type': 'Custom', 'comparator':class_comparator},
-        'Coauthor': {'type': 'Custom', 'comparator': coauthor_comparator},
-        'patent_ct':{'type': 'Custom', 'comparator': integer_diff},
-        'patent_ct_name': {'type': 'Interaction',
-                           'Interaction Fields': ['Name', 'patent_ct']
-                           }
+    fields = {'Name': {'type': 'String', 'Has Missing':True},
+              'LatLong': {'type': 'LatLong', 'Has Missing':True},
+              'Class': {'type': 'Custom', 'comparator':class_comparator},
+              'Coauthor': {'type': 'Custom', 'comparator': coauthor_comparator},
+              'patent_ct':{'type': 'Custom', 'comparator': integer_diff},
+              'patent_ct_name': {'type': 'Interaction',
+                                 'Interaction Fields': ['Name', 'patent_ct']
+                                 }
+              }
 
     # Create a new deduper object and pass our data model to it.
     deduper = dedupe.Dedupe(fields)
@@ -181,23 +189,29 @@ if not blocker:
     sys.exit()
 
 time_block_weights = time.time()
-print 'Learned blocking weights in', time_block_weights - start_time 'seconds'
+print 'Learned blocking weights in', time_block_weights - time_start, 'seconds'
 
 # Save weights and predicates to disk.
 # If the settings file exists, we will skip all the training and learning
 deduper.writeSettings(settings_file)
 
 # Generate the tfidf canopy
-print 'generating tfidf index'
-full_data = ((k, data_d[k]) for k in data_d)
-blocker.tfIdfBlocks(full_data)
-del full_data
+## NOTE: new version of blockData does tfidf implicitly
+# print 'generating tfidf index'
+# full_data = ((k, data_d[k]) for k in data_d)
+# blocker.tfIdfBlocks(full_data)
+# del full_data
 
 # Load all the original data in to memory and place
 # them in to blocks. Return only the block_id: unique_id keys
-blocking_map = patent_util.return_block_map(data_d, blocker)
-keys_to_block = [k for k in blocking_map if len(blocking_map[k]) > 1]
-print '# Blocks to be clustered: %s' % len(keys_to_block)
+#blocking_map = patent_util.return_block_map(data_d, blocker)
+
+# Note this is now just a tuple of blocks, each of which is a
+# recordid: record dict
+
+blocked_data = dedupe.blockData(data_d, blocker)
+#keys_to_block = [k for k in blocking_map if len(blocking_map[k]) > 1]
+print '# Blocks to be clustered: %s' % len(blocked_data)
 
 # Save the weights and predicates
 time_block = time.time()
@@ -213,7 +227,7 @@ deduper.writeSettings(settings_file)
 # If we had more data, we would not pass in all the blocked data into
 # this function but a representative sample.
 
-threshold_data = patent_util.return_threshold_data(blocking_map, data_d)
+threshold_data = patent_util.return_threshold_data(blocked_data, 10000)
 
 print 'Computing threshold'
 threshold = deduper.goodThreshold(threshold_data, recall_weight=recall_weight)
@@ -227,10 +241,7 @@ del threshold_data
 print 'clustering...'
 # Loop over each block separately and dedupe
 
-clustered_dupes = deduper.duplicateClusters(patent_util.candidates_gen(blocking_map,
-                                                                       keys_to_block,
-                                                                       data_d
-                                                                       ),
+clustered_dupes = deduper.duplicateClusters(blocked_data,
                                             threshold
                                             ) 
 
@@ -258,7 +269,7 @@ for df_idx in input_df.index:
         if orig_cluster in clustered_cluster_map:
             cluster_index.append(clustered_cluster_map[orig_cluster])
         else:
-            clustered_cluster_map[orig_cluster] = cluster_counter
+            clustered_cluster_map[orig_cluster] = max_cluster_id
             cluster_index.append(max_cluster_id) #cluster_counter)
             max_cluster_id += 1
             # print cluster_counter
