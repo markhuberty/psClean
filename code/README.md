@@ -20,8 +20,12 @@ Queries the PATSTAT SQL database for inventors and inventor characteristics; per
 2. `./clean/prepare_dedupe_input.py`
 Formats extracted PATSTAT data for use in the dedupe process.
 
-3. `./dedupe/<country_code>_weighted.py`
-Disambiguates country-level PATSTAT inventor files and returns a disambiguated record.
+3. `./dedupe/generate_bash_dedupe.py > eu27_dedupe_script.sh'
+
+`generate_bash_dedupe` produces a bash script that will run
+sequentially through all desired countries. See the file itself for
+documentation. Running the resulting bash script will disambiguate all
+supplied countries.
 
 4. `./postprocess/map_dedupe_han_leuven.py`
 Takes as input the disambiguated PATSTAT data and merges it with the HAN and Leuven disambiguated datasets for comparison.
