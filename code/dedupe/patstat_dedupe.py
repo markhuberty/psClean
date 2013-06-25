@@ -196,17 +196,22 @@ print 'Learned blocking weights in', time_block_weights - time_start, 'seconds'
 deduper.writeSettings(settings_file)
 
 # Generate the tfidf canopy
-print 'generating tfidf index'
-full_data = ((k, data_d[k]) for k in data_d)
-blocker.tfIdfBlocks(full_data)
-del full_data
+## NOTE: new version of blockData does tfidf implicitly
+# print 'generating tfidf index'
+# full_data = ((k, data_d[k]) for k in data_d)
+# blocker.tfIdfBlocks(full_data)
+# del full_data
 
 # Load all the original data in to memory and place
 # them in to blocks. Return only the block_id: unique_id keys
 #blocking_map = patent_util.return_block_map(data_d, blocker)
+
+# Note this is now just a tuple of blocks, each of which is a
+# recordid: record dict
+
 blocked_data = dedupe.blockData(data_d, blocker)
-keys_to_block = [k for k in blocking_map if len(blocking_map[k]) > 1]
-print '# Blocks to be clustered: %s' % len(keys_to_block)
+#keys_to_block = [k for k in blocking_map if len(blocking_map[k]) > 1]
+print '# Blocks to be clustered: %s' % len(blocked_data)
 
 # Save the weights and predicates
 time_block = time.time()
@@ -222,7 +227,7 @@ deduper.writeSettings(settings_file)
 # If we had more data, we would not pass in all the blocked data into
 # this function but a representative sample.
 
-threshold_data = patent_util.return_threshold_data(blocking_map, data_d)
+threshold_data = patent_util.return_threshold_data(blocked_data, 10000)
 
 print 'Computing threshold'
 threshold = deduper.goodThreshold(threshold_data, recall_weight=recall_weight)
@@ -236,10 +241,7 @@ del threshold_data
 print 'clustering...'
 # Loop over each block separately and dedupe
 
-clustered_dupes = deduper.duplicateClusters(patent_util.candidates_gen(blocking_map,
-                                                                       keys_to_block,
-                                                                       data_d
-                                                                       ),
+clustered_dupes = deduper.duplicateClusters(blocked_data,
                                             threshold
                                             ) 
 
