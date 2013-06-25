@@ -29,7 +29,7 @@ supplied countries.
 
 4. `./postprocess/generate_bash_postprocesss > eu27_postprocess_script.sh` 
 
-`generate_bash_dedupe` will read in a list of output files and generate a bash script to merge in both the HAN and Leuven data for subsequent calculation of precision-recall values. See the `map_dedupe_han_leuven.py` script for documentation. The script assumes the presence of a SQL database containing the HAN and Leuven data in specific form.
+`generate_bash_postprocess` will read in a list of output files and generate a bash script to merge in both the HAN and Leuven data for subsequent calculation of precision-recall values. See the `map_dedupe_han_leuven.py` script for documentation. The script assumes the presence of a SQL database containing the HAN and Leuven data in specific form.
 
 4. `./analyze/compute_precision_recall.py`
 Computes the precision and recall data for each country file and returns useful tables.
@@ -43,23 +43,34 @@ Dependencies
 
 All code here has been tested on a Linux system (specifically
 Ubuntu 10.04 or higher). We make no promises about how the default
-configurations will work in other environments.
+configurations will work in other environments. 
 
-### Universal dependencies
+### Python dependencies
+#### Universal dependencies
 - pandas
 - numpy
 
-### Data extract dependencies
+#### Data extract dependencies
+- MySQLdb
 - iPython v0.13 or higher (for parallelization of cleaning on multi-core machines)
 
-### Data cleaning and formatting dependencies
+#### Data cleaning and formatting dependencies
 - unidecode
 
-### Disambiguation dependencies
+#### Disambiguation dependencies
 - [dedupe](https://github.com/open-city/dedupe) and its dependencies. 
+- MySQLdb
 
 Note that **dedupe** is still under active development. The code supplied here works as of mid-June 2013. Users are advised to check the commit logs to determine what, if any, changes occurred thereafter. 
 
+### Other dependencies
+
+The plotting and statistical analysis scripts assume you have a recent [R](http://r-project.org) installation. Additional R packages are also required:
+
+- [plyr](http://plyr.had.co.nz/)
+- [ggplot2](http://ggplot2.org/)
+- [reshape](http://had.co.nz/reshape/)
+- [xtable](http://cran.r-project.org/web/packages/xtable/index.html)
 
 Data
 ---------------
