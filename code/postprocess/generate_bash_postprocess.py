@@ -16,7 +16,7 @@ countries = [re_country.search(i).group(1).lower()
              for i in input_csv_files]
 
 base_str = 'python map_dedupe_han_leuven' + \
-           input_dir + '%s %s' + \
+           input_dir + '%s %s ' + \
            output_dir
 
 
