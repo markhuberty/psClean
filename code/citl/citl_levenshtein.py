@@ -73,8 +73,10 @@ for country in eu27:
     citl = input_df[input_df.source == 'citl']
     patstat = input_df[input_df.source == 'patstat']
 
-    citl_iter = zip(citl.name, citl.id, citl.lat, citl.lng, citl.name_split, citl.sector, citl.namehash)
-    patstat_iter = zip(patstat.name, patstat.id, patstat.lat, patstat.lng, patstat.name_split, patstat.sector,  patstat.namehash)
+    citl_iter = zip(citl.name, citl.id, citl.lat, citl.lng, citl.name_split, citl.sector, citl.patent_ct,
+                    citl.namehash)
+    patstat_iter = zip(patstat.name, patstat.id, patstat.lat, patstat.lng, patstat.name_split, patstat.sector,
+                       patstat.patent_ct, patstat.namehash)
 
     import time
     start_time = time.time()
@@ -117,7 +119,9 @@ for country in eu27:
                                     geo_dist,
                                     country,
                                     citl_record[5], # The class data
-                                    patstat_record[5]
+                                    patstat_record[5],
+                                    patstat_record[6]
+
                                     )
                                    )
 
@@ -138,6 +142,6 @@ df_out = pd.DataFrame(all_record_matches,
                       columns=['citl_name', 'citl_id',
                                'patstat_name', 'patstat_id',
                                'lev_name_dist', 'jac_name_dist',
-                               'geo_dist', 'country', 'sector', 'ipc_codes']
+                               'geo_dist', 'country', 'sector', 'ipc_codes', 'patent_ct']
                       )
 df_out.to_csv('citl_patstat_matches.csv', index=False)
