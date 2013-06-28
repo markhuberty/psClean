@@ -15,7 +15,7 @@ input_csv_files = [i for i in input_files if 'csv' in i]
 countries = [re_country.search(i).group(1).lower()
              for i in input_csv_files]
 
-base_str = 'python map_dedupe_han_leuven' + \
+base_str = 'python map_dedupe_han_leuven.py ' + \
            input_dir + '%s %s ' + \
            output_dir
 

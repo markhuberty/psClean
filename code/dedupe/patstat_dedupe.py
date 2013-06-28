@@ -122,7 +122,7 @@ if os.path.exists(settings_file):
 
 else:
     # To train dedupe, we feed it a random sample of records.
-    data_sample = dedupe.dataSample(data_d, 3 * input_df.shape[0])
+    data_sample = dedupe.dataSample(data_d, 10 * input_df.shape[0])
     # Define the fields dedupe will pay attention to
     fields = {'Name': {'type': 'String', 'Has Missing':True},
               'LatLong': {'type': 'LatLong', 'Has Missing':True},

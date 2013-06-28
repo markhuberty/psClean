@@ -127,7 +127,7 @@ eu27 = ['at',
 inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]
 root_dir = inputs[0]
 
-cluster_ids = ['cluster_id_r1']#, 'cluster_id_r2']
+cluster_ids = ['cluster_id']#, 'cluster_id_r2']
 
 id_precision = []
 id_recall = []

@@ -37,7 +37,7 @@ sys.stdout = os.fdopen(sys.stdout.fileno(), 'wb', 0)
 inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]
 dedupe_output_file = inputs[0]
 country = inputs[1]
-output_root = inputs[2]
+output_root = inputs[2] + '_' + country + '_'
 
 ## Generate and query the data
 han_query = """SELECT HAN_ID, OCT11_Person_id, Person_name_clean FROM han_person WHERE Person_ctry_code='""" + country.upper() + """'"""
