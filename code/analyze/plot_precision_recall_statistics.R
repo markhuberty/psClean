@@ -103,8 +103,7 @@ plot.pr <- ggplot(df.pr.cast,
                   aes(y=precision,
                       x=recall,
                       group=val,
-                      label=X,
-                      colour=val
+                      label=X
                       )
                   ) +
   geom_text() +
@@ -146,7 +145,7 @@ ggsave(plot.pr.l1.l2,
        file="./figures/level1_level2_precision_recall.pdf"
        )
 
-df.pr <- df.pr[df.pr$cluster_label == "cluster_id_r1",]
+df.pr <- df.pr[df.pr$cluster_label == "cluster_id",]
 df.pr <- df.pr[,-2]
 
 # assumes be, it, fr, es, nl, dk, fi
