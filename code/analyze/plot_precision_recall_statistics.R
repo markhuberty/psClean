@@ -103,8 +103,7 @@ plot.pr <- ggplot(df.pr.cast,
                   aes(y=precision,
                       x=recall,
                       group=val,
-                      label=X,
-                      colour=val
+                      label=X
                       )
                   ) +
   geom_text() +
