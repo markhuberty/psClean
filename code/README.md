@@ -58,7 +58,10 @@ configurations will work in other environments.
 
 #### Data extract dependencies
 - MySQLdb
-- iPython v0.13 or higher (for parallelization of cleaning on multi-core machines)
+- iPython v0.13 or higher (for parallelization of cleaning on
+multi-core machines)
+- fuzzygeo, for geocoding. See https://github.com/markhuberty/fuzzygeo
+for more detail. 
 
 #### Data cleaning and formatting dependencies
 - unidecode
