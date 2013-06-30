@@ -150,30 +150,33 @@ df.pr <- df.pr[,-2]
 
 # assumes be, it, fr, es, nl, dk, fi
 # weights.vec <- c(1.5, 4, 1.5, 1.5, 3, 1.5, 1.5)
-weights <- c("at" = 3,
-             "be" = 1.5,
-             "it" = 4,
-             "fr" = 1.5,
-             "es" = 1.5,
-             "nl" = 3,
-             "dk" = 1.5,
-             "fi" = 1.5,
-             "de" = 1.5,
-             "ro" = 3,
-             "si" = 1,
-             "pl" = 4,
-             "lt" = 1.5,
-             "lv" = 1.5,
-             "ee" = 1.5,
-             "ie" = 3,
-             "cz" = 1.5,
-             "gb" = 2,
-             "pt" = 1.5,
-             "se" = 1.5,
-             "bg" = 1.5,
-             "hu" = 3,
-             "lu" = 1,
-             "sk" = 1.5
+weights <- c('at'=3,
+             'be'=1.25,
+             'bg'=1.5,
+             'cy'= 1.5,
+             'cz'= 1.5,
+             'de'=1.5,
+             'dk'=1.5,
+             'ee'=1.5,
+             'el'=1.5,
+             'es'=1.5,
+             'fi'=1.5,
+             'fr'=1.5,
+             'gb'=2,
+             'hu'=5,
+             'ie'=3,
+             'it'=4.5,
+             'lt'=3,
+             'lu'=1,
+             'lv'=1.5,
+             'mt'=2.0,
+             'nl'=3.5,
+             'pl'=6,
+             'pt'=1.5,
+             'ro'=1.5,
+             'se'=1.0,
+             'si'=1.5,
+             'sk'=1.5
              )
 
 df.weights <- data.frame(names(weights), weights)
@@ -185,7 +188,7 @@ df.pr$Country <- toupper(df.pr$Country)
 
 tab.pr <- xtable(df.pr,
                  label="tab:pr",
-                 caption="Precision and recall results by country for the \\texttt{dedupe} output. ID values measure the person-level performance, relative to hand-matched Leuven Level 2 results. Patent data measure the accuracy of assignment of patents to unique individuals. Results are shown for comparison with both the Leuven level 1 (L1) and hand-matched level 2 (L2) datasets. Precision-recall weights refer to the settings used for rounds 1 and 2 of disambiguation for each country. Countries missing precision and recall data had no corresponding Leuven Level 2 IDs in the dataset."
+                 caption="Precision and recall results by country for the \\texttt{dedupe} output. ID values measure the person-level performance, relative to hand-matched Leuven Level 2 results. Patent data measure the accuracy of assignment of patents to unique individuals. Results are shown for comparison with both the Leuven level 1 (L1) and hand-matched level 2 (L2) datasets. Countries missing precision and recall data had no corresponding Leuven Level 2 IDs in the dataset."
                  )
 print(tab.pr,
       file="./tables/tab_precision_recall.tex",

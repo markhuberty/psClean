@@ -82,9 +82,9 @@ is_match, dists = label_matches(df_match.citl_name,
 dist_mat = np.array(dists)
 
 svc = SVC()
-svc_fit = svc.fit(dist_mat, np.array(is_match))
-svc_pred = svc_fit.predict(dist_mat)
-svc_score = cv.cross_val_score(svc, dist_mat, np.array(is_match), cv=10)
+svc_fit = svc.fit(dist_mat[700:], np.array(is_match[700:]))
+svc_pred = svc_fit.predict(dist_mat[700:])
+svc_score = cv.cross_val_score(svc, dist_mat[700:], np.array(is_match[700:]), cv=10)
 mean_svc_score = np.mean(svc_score)
 sd_svc_score = np.std(svc_score)
 
