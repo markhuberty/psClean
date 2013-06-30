@@ -13,6 +13,13 @@ readDataFrame in the patent_util.py file.
 
 The output will be a CSV with our clustered results.
 
+Input files are assumed to be of the form dedupe_input_<country_code>.csv
+Output files are written to patstat_output_<date>_<country_code>.csv
+
+The script is invoked from the command line as:
+
+python patstat_dedupe.py <country_code> <input_dir> <output_dir>
+
 For details on how the dedupe algorithm works, see
 https://github.com/open-city/dedupe
 """

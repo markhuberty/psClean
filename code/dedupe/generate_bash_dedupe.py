@@ -1,33 +1,53 @@
 import sys
 
+"""
+This script generates a bash script to disambiguate each country specified in the
+country_weights dict. That dict should take the form country: precision_recall_weight. See the
+dedupe documentation for those weights.
 
-eu27_weights = {#'at':3,
-                #'be':1.25,
-                #'bg':1.5,
-                #'cy': 1.5,
-                #'cz': 1.5,
-                # 'de':1.5,
-                # 'dk':1.5,
-                # 'ee':1.5,
-                # 'el':1.5,
-                # 'es':1.5,
-                # 'fi':1.5,
-                # 'fr':1.5,
-                # 'gb':2,
+The dict provided herein documents the weights used for the disambiguation process for
+data delivered in June 2013.
+
+The script can be invoked from the command line :
+
+python generate_bash_dedupe.py <path_to_root_psClean_directory>
+
+It assumes the following:
+- Dedupe inputs are in psClean/data/dedupe_input
+- Dedupe output should go to psClean/data/dedupe_script_output
+
+See patstat_dedupe.py for documentation of the dedupe process itself. 
+
+
+"""
+
+eu27_weights = {'at':3,
+                'be':1.25,
+                'bg':1.5,
+                'cy': 1.5,
+                'cz': 1.5,
+                 'de':1.5,
+                 'dk':1.5,
+                 'ee':1.5,
+                 'el':1.5,
+                 'es':1.5,
+                 'fi':1.5,
+                 'fr':1.5,
+                 'gb':2,
                 'hu':5,
-                #'ie':3,
-                #'it':4.5,
+                'ie':3,
+                'it':4.5,
                 'lt':3,
-                # 'lu':1,
-                # 'lv':1.5,
-                #'mt':2.0,
-                #'nl':3.5,
+                 'lu':1,
+                 'lv':1.5,
+                'mt':2.0,
+                'nl':3.5,
                 'pl':6,
-                # 'pt':1.5,
-                # 'ro':1.5,
-                #'se':1.0,
-                # 'si':1.5,
-                # 'sk':1.5
+                 'pt':1.5,
+                 'ro':1.5,
+                'se':1.0,
+                 'si':1.5,
+                 'sk':1.5
                 }
 
 ordered_weights = sorted(eu27_weights.items(), key=lambda v: v[0])
