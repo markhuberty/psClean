@@ -21,20 +21,26 @@ Queries the PATSTAT SQL database for inventors and inventor characteristics; per
 Formats extracted PATSTAT data for use in the dedupe process.
 
 3. `./dedupe/generate_bash_dedupe.py > eu27_dedupe_script.sh`
-
 `generate_bash_dedupe` produces a bash script that will run
 sequentially through all desired countries. See the file itself for
 documentation. Running the resulting bash script will disambiguate all
 supplied countries.
 
 4. `./postprocess/generate_bash_postprocesss > eu27_postprocess_script.sh` 
+`generate_bash_postprocess` will read in a list of output files and
+generate a bash script to merge in both the HAN and Leuven data for
+subsequent calculation of precision-recall values. See the
+`map_dedupe_han_leuven.py` script for documentation. The script
+assumes the presence of a SQL database containing the HAN and Leuven
+data in specific form.
 
-`generate_bash_postprocess` will read in a list of output files and generate a bash script to merge in both the HAN and Leuven data for subsequent calculation of precision-recall values. See the `map_dedupe_han_leuven.py` script for documentation. The script assumes the presence of a SQL database containing the HAN and Leuven data in specific form.
-
-4. `./analyze/compute_precision_recall.py`
+5. `./analyze/compute_precision_recall.py`
 Computes the precision and recall data for each country file and returns useful tables.
 
-Note that the present configuration of `psCleanup` does not write back into the SQL database; this is a relic of debugging and should be fixed in the future. 
+Note that the present configuration of `psCleanup` does not write back
+into the SQL database; this is a relic of debugging and should be
+fixed in the future. Users should make sure that file paths and other
+details correspond to their system's file structure.
 
 
 
