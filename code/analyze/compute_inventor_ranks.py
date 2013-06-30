@@ -92,26 +92,26 @@ def compute_canonical_counts(df_ref, df_p, ref_cluster='leuven_id', d_cluster='c
     return out[[ref_cluster, d_cluster, 'dedupe_ct', 'ref_ct']]
 
 
-eu27 = [# 'at',
-        # 'bg',
-        # 'be',
-        # 'it',
-        # 'gb',
-        # 'fr',
-        # 'de',
-        # 'sk',
-        # 'se',
-        # 'pt',
-        # 'pl',
-        # 'hu',
-        # 'ie',
-        # 'ee',
-        # 'es',
-        # 'cy',
-        # 'cz',
-        # 'nl',
-        # 'si',
-        # 'ro',
+eu27 = [ 'at',
+         'bg',
+         'be',
+         'it',
+         'gb',
+         'fr',
+         'de',
+         'sk',
+         'se',
+         'pt',
+         'pl',
+         'hu',
+         'ie',
+         'ee',
+         'es',
+         'cy',
+         'cz',
+         'nl',
+         'si',
+         'ro',
         'dk',
         'lt',
         'lu',
@@ -119,6 +119,7 @@ eu27 = [# 'at',
         'mt',
         'fi',
         'el',
+         'gr'
         ]
 inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]
 patent_dir = inputs[0]
@@ -133,7 +134,7 @@ countries = []
 for country in eu27:
 
     try:
-        df_leuven = pd.read_csv(output_dir + country + '_weighted/' + 'dedupe_leuven_map.csv')
+        df_leuven = pd.read_csv(output_dir + country + '_dedupe_leuven_map.csv')
         df_patent = pd.read_csv(patent_dir + country + '_person_patent_map.csv')
         df_input = pd.read_csv(person_dir + 'dedupe_input_' + country + '.csv')
     except:
@@ -156,7 +157,7 @@ for country in eu27:
                                 how='inner'
                                 )
 
-    df_leuven_patent = df_leuven_patent[['cluster_id_r1',
+    df_leuven_patent = df_leuven_patent[['cluster_id',
 #                                         'cluster_id_r2',
                                          'leuven_id',
                                          'leuven_ld_level',
@@ -166,7 +167,7 @@ for country in eu27:
     leuven_d1 = compute_canonical_counts(df_leuven,
                                          df_leuven_patent,
                                          ref_cluster='leuven_id',
-                                         d_cluster='cluster_id_r1'
+                                         d_cluster='cluster_id'
                                          )
 
     # leuven_d2 = compute_canonical_counts(df_leuven,
@@ -191,7 +192,7 @@ for country in eu27:
     # cids.append('round2')
     # countries.append(country)
 
-    d1_output_file = output_dir + country + '_weighted/dedupe_leuven_patent_counts_r1.csv'
+    d1_output_file = output_dir + country + '_dedupe_leuven_patent_counts.csv'
     leuven_d1.to_csv(d1_output_file)
 
     # d2_output_file = output_dir + country + '/dedupe_leuven_patent_counts_r2.csv'
