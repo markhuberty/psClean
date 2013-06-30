@@ -144,7 +144,7 @@ cluster_label = []
 
 for cluster_id in cluster_ids:
     for country in eu27:
-        input_dir = os.path.expanduser(root_dir + '_' + country + '_')
+        input_dir = os.path.expanduser(root_dir + country + '_')
 
         # Define the input filenames
         dedupe_han = input_dir + 'dedupe_han_map.csv'
