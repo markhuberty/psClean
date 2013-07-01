@@ -66,7 +66,7 @@ outcomes from more resource-intensive hand coding.
 \section{Introduction}
 \label{sec:introduction}
 
-Interest in innovation microdata has risen along with the availability
+Interest in innovation micro-data has risen along with the availability
 of detailed patent databases. However, data quality poses significant
 barriers to their use. Patent databases do not reliably identify all
 instances of the same inventor as a unique entity. Hence the ``name
@@ -433,26 +433,37 @@ retrieved matches as a share of all retrieved matches. Conversely, we may also `
 Leuven IDs: the PATSTAT IDs assigned to a single Leuven ID may be
 assigned to more than one \texttt{dedupe} ID. This corresponds to the
 formal definition of \texttt{recall}: true retrieved matches as a
-share of all retrieved matches.\footnote{This reflects what we term a
-  \textit{group-level} approach to computing precision and recall. We
-  choose this approach because it most closely reflects the primary
-  concern for users: does the disambiguation aggregate most
-  duplicate inventors, and most patents associated with those duplicates,
-  into a single record? Computing precision and recall based on
-  assignment to the largest group reflects this user interest. 
+share of all retrieved matches.\footnote{This method for computing
+  precision and recall reflects a \textit{group-level} view of the
+  matching problem. In that view, the critical metric is how many IDs
+  were assigned to a common group, compared with a ground truth
+  estimate for how should have been assigned. This is not the only
+  metric. Instead, we might have considered a \textit{pairwise}
+  approach, where we wish to know how many IDs were correctly
+  connected to each other, compared with a ground truth. The
+  group-level approach measures group membership, while the pairwise
+  approach measures the connections between IDs represented by group
+  membership. The functional difference is as follows: for a group of
+  size $N$, to which we assign $M$ IDs, the group-level approach would
+  compute recall as $\frac{M_{correct}}{N}$, whereas the pairwise
+  approach would compute it as $\binom{M_{correct}}{2} /
+  \binom{N}{2}$. 
 
-We could have instead focused on individual pairwise ID
-connections. For instance, an alternate recall score would be the
-share of all pairwise ID connections found, over total ID connections
-that actually exist. Hence for a group that in reality contained 5
-IDs, 100\% recall would find $\binom{5}{2} = 10$ pairwise ID linkages
-(1:1, 1:2, ...4:5). This might, in some cases, better reflect the
-success of the disambiguation algorithm: for $N$ IDs, putting
-$\frac{N}{2}$ in each of two groups is better than putting
-$\frac{N}{2}$ in one group and leaving the others completely
-disaggregated. But this is not exactly what the user necessarily cares
-about. Hence we chose to focus on group-level precision and recall as
-statistics more meaningful to the data user.}
+  The pairwise approach permits a more nuanced view of success in the
+  following case: consider a group that in reality contained 10
+  members. We assign 5 members to one group, and the remaining 5 to
+  another. In this scenario, $recall_{group} = \frac{5}{10}$, while
+  $recall_{pair} = \frac{20}{45} = \frac{4}{9}$. By splitting the group in this
+  instance, we have missed many pairwise connections, even though 50\%
+  of all IDs were correctly aggregated together. 
+  
+  We choose the group-level approach because it most closely reflects
+  actual user concerns: given a specific dedupe ID, how well does that
+  ID represent the unique inventor composed of all the non-unique
+  PATSTAT records it contains? Group-level membership, rather than
+  pairwise connections, determine the usefulness of our disambiguation
+  for the end user even if it sometimes overstates the rate of correct
+  pairwise association.}
 
 \begin{landscape}
   \begin{table}[t]
@@ -899,7 +910,7 @@ The full implementation of the algorithm is available as the
 number of possible comparison cities. For medium-sized
 countries, this equates to anywhere from 25-50ms per address. This can
 go as high as 100-200ms for a large country with many cities, like the
-United States. Runtimes can be improved by subsetting cities using the
+United States. Runtimes can be improved by sub-setting cities using the
 first two letters of all address ngrams, at obvious risk to
 recall. 
 
