@@ -433,10 +433,26 @@ retrieved matches as a share of all retrieved matches. Conversely, we may also `
 Leuven IDs: the PATSTAT IDs assigned to a single Leuven ID may be
 assigned to more than one \texttt{dedupe} ID. This corresponds to the
 formal definition of \texttt{recall}: true retrieved matches as a
-share of all retrieved matches.
+share of all retrieved matches.\footnote{This reflects what we term a
+  \textit{group-level} approach to computing precision and recall. We
+  choose this approach because it most closely reflects the primary
+  concern for users: does the disambiguation aggregate most
+  duplicate inventors, and most patents associated with those duplicates,
+  into a single record? Computing precision and recall based on
+  assignment to the largest group reflects this user interest. 
 
-Second, we discuss heuristics for choosing the optimum
-precision-recall trade off for the \texttt{dedupe} algorithm. 
+We could have instead focused on individual pairwise ID
+connections. For instance, an alternate recall score would be the
+share of all pairwise ID connections found, over total ID connections
+that actually exist. Hence for a group that in reality contained 5
+IDs, 100\% recall would find $\binom{5}{2} = 10$ pairwise ID linkages
+(1:1, 1:2, ...4:5). This might, in some cases, better reflect the
+success of the disambiguation algorithm: for $N$ IDs, putting
+$\frac{N}{2}$ in each of two groups is better than putting
+$\frac{N}{2}$ in one group and leaving the others completely
+disaggregated. But this is not exactly what the user necessarily cares
+about. Hence we chose to focus on group-level precision and recall as
+statistics more meaningful to the data user.}
 
 \begin{landscape}
   \begin{table}[t]
