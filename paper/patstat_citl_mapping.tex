@@ -34,7 +34,7 @@
     the political economy of green innovation. We thank in particular
     Lee Fleming, Forest Gregg, and Derek Elder for their contributions
     to disambiguation approaches. All errors remain our own.}\\
-  DRAFT NOT FOR CIRCULATION}
+  Working Paper}
 \author{Mark Huberty\thanks{University of California,
     Berkeley. \texttt{markhuberty@berkeley.edu}}, Amma
   Serwaah\thanks{Bruegel.}, and Georg Zachmann\thanks{Bruegel. \texttt{georg.zachmann@bruegel.org}}}
@@ -202,7 +202,7 @@ latitude/longitude pair:
   non-matches for the entire set of potential matches
 \end{enumerate}
 
-Classification accuracy was estimated at 98$\pm$1\% via ten-fold
+Classification accuracy was estimated at 92$\pm$1\% via ten-fold
 cross-validation. We note several caveats for using this estimation
 strategy. First, the labeling rubric should be fairly generous towards
 classifying different country subsidiaries together, in order to
@@ -230,7 +230,15 @@ potential record pairs, the relative degree of additional variance
 introduced by either new CITL account holders or new inventors in the
 PATSTAT database should be low. Hence the classification approach
 presented here should permit ongoing updates to the record linkage
-estimates without substantial further investment in human coding effort.
+estimates without substantial further investment in human coding
+effort.\footnote{We are pursuing the use of additional data in the
+  classifier. In particular, we hope to develop a means of associating
+inventors to economic sectors based on the technology categories in
+which they innovate. Since the CITL data have economic sector as well,
+this would permit matching not only to name and place, but economic
+activity as well. This would help distinguish, in particular, name
+differences due to minor spelling errors from name differences due to
+real distinctions among firms. This work is presently ongoing.}
 
 \subsection{Results and descriptive statistics}
 \label{sec:descr-stat}
@@ -293,7 +301,9 @@ effort remains incomplete given the likelihood of complex corporate
 structures that are not amenable to record linkage based on
 comparisons of name and geography alone. Hence the results presented
 here provide a conservative estimate of the degree of innovative
-activity among regulated firms. 
+activity among regulated firms. We propose, and are pursuing,
+additional data on economic sector and operations that may assist in
+improving these matches.
 
 \bibliography{/home/markhuberty/bibs/patstat_dedupe}
 \bibliographystyle{apalike}

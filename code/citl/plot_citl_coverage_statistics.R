@@ -74,7 +74,8 @@ plot.pct.match <- ggplot(df.pct.match,
                          ) +
   geom_point() +
   scale_y_discrete("Country") +
-  scale_x_continuous("Proportion of CITL names w. PATSTAT match")
+  scale_x_continuous("Proportion of CITL names w. PATSTAT match") +
+  theme_bw()
 print(plot.pct.match)
 ggsave("./figures/citl_match_pct_overall.pdf",
        width=7,
@@ -90,7 +91,7 @@ pct.match.bytype <- ddply(.data=all.citl, .variables=c("country.x", "mainactivit
               )
 pct.match.bytype$country <- toupper(pct.match.bytype$country)
 
-plot.pct.match.bytype <- ggplot(pct.match.bytype,
+plot.pct.match.bytype <- ggplot(na.omit(pct.match.bytype),
                                 aes(y=mainactivitytypecodelookup,
                                     x=pct.match
                                     )
@@ -99,7 +100,8 @@ plot.pct.match.bytype <- ggplot(pct.match.bytype,
   facet_wrap(~ country) +
   scale_x_continuous("Proportion of CITL names w. PATSTAT match") +
   scale_y_discrete("CITL activity description") +
-  opts(axis.text.y=theme_text(size=5), axis.text.x=theme_text(size=8, angle=-90, vjust=0))
+  theme_bw() +
+  theme(axis.text.y=element_text(size=5), axis.text.x=element_text(size=8, angle=-90, vjust=0))
 print(plot.pct.match.bytype)
 ggsave(plot.pct.match.bytype,
        file="./figures/citl_match_pct_bytype.pdf",
