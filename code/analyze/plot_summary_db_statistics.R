@@ -2,7 +2,7 @@ library(ggplot2)
 library(xtable)
 library(reshape)
 
-df <- read.csv("../data//patstat_dedupe_summary_statistics_eu27.csv")
+df <- read.csv("../data/patstat_dedupe_summary_statistics_eu27.csv")
 
 # Plot the addresses
 plot.addr.ratio <- ggplot(df,
@@ -15,7 +15,8 @@ plot.addr.ratio <- ggplot(df,
   geom_abline(intercept=0, slope=1, alpha=0.5, linetype=2) +
   coord_cartesian(xlim=c(0,1), ylim=c(0,1)) +
   scale_x_continuous("Share of records with addresses") +
-  scale_y_continuous("Share of records with geo-coded addresses")
+  scale_y_continuous("Share of records with geo-coded addresses") +
+  theme_bw()
 print(plot.addr.ratio)
 ggsave(plot.addr.ratio,
        file="../figures/patstat_dedupe_address_ratio.pdf",
@@ -32,15 +33,18 @@ levels(df.dedupe.melt$variable) <- c("Geo-coded address", "Coauthors", "IPC Code
 
 plot.ratio.line <- ggplot(df.dedupe.melt,
                           aes(x=country,
-                              y=value,
-                              group=variable,
-                              shape=variable
+                              y=value## ,
+                              ## group=variable,
+                              ## shape=variable
                               )
                           ) +
   geom_point() +
   scale_x_discrete("Country") +
   scale_y_continuous("Percent complete records") +
-  scale_shape("Field")
+  facet_wrap(~ variable) +
+  theme_bw() +
+  theme(axis.text.x=element_text(size=6))
+  #scale_shape("Field")
 print(plot.ratio.line)
 ggsave(plot.ratio.line,
        filename="../figures/dedupe_data_summary.pdf",

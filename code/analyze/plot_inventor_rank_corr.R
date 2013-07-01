@@ -16,6 +16,7 @@ df$spearman <- spearman
 tab.corr <- df[,3:ncol(df)]
 names(tab.corr) <- c("Country", "Pearson", "Spearman")
 tab.corr$Country <- toupper(tab.corr$Country)
+tab.corr <- tab.corr[order(tab.corr$Country),]
 xtab.corr <- xtable(tab.corr,
                     label="tab:patent_count_corr",
                     caption="Correlation between patent counts assigned to matching Leuven and Dedupe IDs."

@@ -81,12 +81,17 @@ tab.id <- df.id[c("Country", "Dedupe")]
 tab.id$Country = toupper(tab.id$Country)
 tab.id$Dedupe = (1 - tab.id$Dedupe) * 100
 names(tab.id) <- c("Country", "Pct reduction in unique individuals")
+tab.id <- tab.id[order(tab.id$Country),]
 
 xtab.id <- xtable(tab.id,
                   label="tab:id_pct_reduction",
                   caption="Percentage reduction in unique IDs by country."
                   )
-print(xtab.id, digits=1, file="./tables/tab_id_pct_reduction.tex")
+print(xtab.id,
+      digits=1,
+      file="./tables/tab_id_pct_reduction.tex",
+      include.rownames=FALSE
+      )
 
 ## Generate tables and plots for the precision/recall data
 df.pr.melt <- melt(df.pr, id.vars=c("X", "cluster_label"))
