@@ -37,7 +37,7 @@
     Gregg and Derek Elder, who wrote the \texttt{dedupe} library for
     Python; and KU Leuven, for providing the benchmark data based on
     their disambiguation of PATSTAT. All errors remain our own.}\\
-  DRAFT NOT FOR CIRCULATION}
+  Working Paper}
 \author{Mark Huberty\thanks{University of California,
     Berkeley. \texttt{markhuberty@berkeley.edu}}, Amma
   Serwaah\thanks{Bruegel.}, and Georg Zachmann\thanks{Bruegel. \texttt{georg.zachmann@bruegel.org}}}
@@ -473,13 +473,13 @@ share of all retrieved matches.\footnote{This method for computing
       PATSTAT ID & Patent Count & \texttt{dedupe} ID & Leuven ID & ID Precision &
       Patent precision & ID Recall & Patent recall\\
       \hline
-      1 & 5 & \multirow{3}{*}{1} & \multirow{2}{*}{1} &
+      1 & 5 & 1 & 1 &
       \multirow{3}{*}{$P_{id=1} = \frac{2}{3}$} &
-      \multirow{3}{*}{$P_{id=1. patent} = \frac{6}{9}$} &     
+      \multirow{3}{*}{$P_{id=1, patent} = \frac{6}{9}$} &     
       \multirow{3}{*}{$R_{id=1} = \frac{2}{2}$} & 
       \multirow{3}{*}{$R_{id=1, patent} = \frac{6}{6}$}\\
-      2 & 1 & & & & & &\\
-      3 & 3 & & 2 & & & &\\
+      2 & 1 & 1 & 1 & & & &\\
+      3 & 3 & 1 & 2 & & & &\\
       \hline
       4 & 7 & 2 & 3 & 1 & 1 &1 & 1 \\
     \end{tabular}
