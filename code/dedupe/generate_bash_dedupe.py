@@ -47,7 +47,8 @@ eu27_weights = {'at':3,
                  'ro':1.5,
                 'se':1.0,
                  'si':1.5,
-                 'sk':1.5
+                 'sk':1.5.
+                'gr':1.5
                 }
 
 ordered_weights = sorted(eu27_weights.items(), key=lambda v: v[0])

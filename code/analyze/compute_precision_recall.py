@@ -132,7 +132,7 @@ eu27 = ['at',
 inputs = [i for idx, i in enumerate(sys.argv) if idx > 0]
 root_dir = inputs[0]
 
-cluster_id = 'cluster_id_r1'
+cluster_id = 'cluster_id'
 
 id_precision = []
 id_recall = []
@@ -151,11 +151,11 @@ max_fl, max_lf, max_fl_l2,  max_lf_l2 = [], [], [], []
 
 for country in eu27:
     print country
-    input_dir = os.path.expanduser(root_dir + country + '_weighted/')
+    input_dir = os.path.expanduser(root_dir)
 
     # Define the input filenames
-    dedupe_han = input_dir + 'dedupe_han_map.csv'
-    dedupe_leuven = input_dir + 'dedupe_leuven_map.csv'
+    dedupe_han = input_dir + '%s_dedupe_han_map.csv' % country
+    dedupe_leuven = input_dir + '%s_dedupe_leuven_map.csv' % country
     person_patent = os.path.expanduser('~/Documents/psClean/data/dedupe_input/person_patent/' + country + '_person_patent_map.csv')
     # cluster_id = 'cluster_id_r2'
 
@@ -174,7 +174,7 @@ for country in eu27:
     df_leuven_2 = df_leuven[df_leuven.leuven_ld_level == 2]
 
     if df_leuven_2.shape[0] > 0:
-        dedupe_na = np.isnan(df_leuven_2.cluster_id_r1)
+        dedupe_na = np.isnan(df_leuven_2.cluster_id)
         df_leuven_2 = df_leuven_2.ix[~dedupe_na]
 
 
@@ -184,12 +184,20 @@ for country in eu27:
 
         grouped_leuven_ct = leuven_dedupe_ct.groupby(level=0)
         max_vals = grouped_leuven_ct.agg(np.max)
-        overall_recall = np.sum(max_vals) / float(np.sum(leuven_dedupe_ct))
+
+        try:
+            overall_recall = np.sum(max_vals) / float(np.sum(leuven_dedupe_ct))
+        except:
+            overall_recall = np.nan
         id_recall.append(overall_recall)
 
         grouped_dedupe_ct = leuven_dedupe_ct.groupby(level=1)
         max_vals = grouped_dedupe_ct.agg(np.max)
-        overall_precision = float(np.sum(max_vals)) / np.sum(leuven_dedupe_ct)
+
+        try:
+            overall_precision = float(np.sum(max_vals)) / np.sum(leuven_dedupe_ct)
+        except:
+            overall_precision = np.nan
         id_precision.append(overall_precision)
     else:
         id_precision.append('NA')
@@ -234,9 +242,9 @@ for country in eu27:
     l2_patent_recall.append(l2_overall_recall)
     l2_patent_precision.append(l2_overall_precision)
 
-    df_dedupe = df_leuven[['Person', 'cluster_id_r1']].drop_duplicates()
+    df_dedupe = df_leuven[['Person', 'cluster_id']].drop_duplicates()
     n_pid = len(df_dedupe.Person.drop_duplicates())
-    n_id1 = len(df_dedupe.cluster_id_r1.drop_duplicates())
+    n_id1 = len(df_dedupe.cluster_id.drop_duplicates())
     pid_count.append(n_pid)
     id1_count.append(n_id1)
 
@@ -276,37 +284,44 @@ for country in eu27:
     max_lf.append(df_max_lf[:5])
 
     # For Leuven level 2
+   
     df_leuven_idx_l2 = df_leuven.ix[df_leuven.leuven_ld_level == 2][[cluster_id, 'leuven_id']].drop_duplicates()
+    
     if len(df_leuven_idx_l2) > 0:
-        dedupe_leuven_l2_map, leuven_l2_dedupe_map = count_id_maps(df_leuven_idx_l2, cluster_id, 'leuven_id')
-        
-        df_max_fl_l2 = get_name_by_stat(df_leuven.ix[df_leuven.leuven_ld_level == 2],
-                                        cluster_id,
-                                        dedupe_leuven_l2_map['map'],
-                                        dedupe_leuven_l2_map['stats'],
-                                        'max',
-                                        [cluster_id, 'leuven_id', 'person_name']
-                                        )
-        df_max_fl_l2 = df_max_fl_l2.dropna().drop_duplicates()
-        df_max_fl_l2.columns = ['Dedupe ID', 'Leuven ID', 'Name']
-        df_max_fl_l2['Name'] = unidecode_list(df_max_fl_l2['Name'])
-        df_max_fl_l2['Country'] = country.upper()
-        max_fl_l2.append(df_max_fl_l2[:5])
-        
 
+        try:
+            dedupe_leuven_l2_map, leuven_l2_dedupe_map = count_id_maps(df_leuven_idx_l2, cluster_id, 'leuven_id')
+        except:
+            dedupe_leuven_l2_map , leuven_l2_dedupe_map = None, None
 
-        df_max_lf_l2 = get_name_by_stat(df_leuven.ix[df_leuven.leuven_ld_level == 2],
-                                                                        'leuven_id',
-                                                                        leuven_l2_dedupe_map['map'],
-                                                                        leuven_l2_dedupe_map['stats'],
-                                                                        'max',
-                                                                        [cluster_id, 'leuven_id', 'person_name']
-                                                                        )
-        df_max_lf_l2 = df_max_lf_l2.dropna().drop_duplicates()
-        df_max_lf_l2.columns = ['Dedupe ID', 'Leuven ID', 'Name']
-        df_max_lf_l2['Name'] = unidecode_list(df_max_lf_l2['Name'])
-        df_max_lf_l2['Country'] = country.upper()
-        max_lf_l2.append(df_max_lf_l2[:5])
+        if dedupe_leuven_l2_map:
+            df_max_fl_l2 = get_name_by_stat(df_leuven.ix[df_leuven.leuven_ld_level == 2],
+                                            cluster_id,
+                                            dedupe_leuven_l2_map['map'],
+                                            dedupe_leuven_l2_map['stats'],
+                                            'max',
+                                            [cluster_id, 'leuven_id', 'person_name']
+                                            )
+            df_max_fl_l2 = df_max_fl_l2.dropna().drop_duplicates()
+            df_max_fl_l2.columns = ['Dedupe ID', 'Leuven ID', 'Name']
+            df_max_fl_l2['Name'] = unidecode_list(df_max_fl_l2['Name'])
+            df_max_fl_l2['Country'] = country.upper()
+            max_fl_l2.append(df_max_fl_l2[:5])
+            
+
+        if leuven_l2_dedupe_map:
+            df_max_lf_l2 = get_name_by_stat(df_leuven.ix[df_leuven.leuven_ld_level == 2],
+                                            'leuven_id',
+                                            leuven_l2_dedupe_map['map'],
+                                            leuven_l2_dedupe_map['stats'],
+                                            'max',
+                                            [cluster_id, 'leuven_id', 'person_name']
+                                            )
+            df_max_lf_l2 = df_max_lf_l2.dropna().drop_duplicates()
+            df_max_lf_l2.columns = ['Dedupe ID', 'Leuven ID', 'Name']
+            df_max_lf_l2['Name'] = unidecode_list(df_max_lf_l2['Name'])
+            df_max_lf_l2['Country'] = country.upper()
+            max_lf_l2.append(df_max_lf_l2[:5])
 
         
 pr_dict = {'cluster_label': cluster_label,
@@ -332,16 +347,16 @@ df_max_fl = pd.concat(max_fl, ignore_index=True)
 df_max_lf_l2 = pd.concat(max_lf_l2, ignore_index=True)
 df_max_fl_l2 = pd.concat(max_fl_l2, ignore_index=True)
 
-with open('../tables/dedupe_leuven_splitting.tex', 'wt') as f:
+with open('../../tables/dedupe_leuven_splitting.tex', 'wt') as f:
     df_max_lf.to_latex(f, index=False)
 
-with open('../tables/dedupe_leuven_clumping.tex', 'wt') as f:
+with open('../../tables/dedupe_leuven_clumping.tex', 'wt') as f:
     df_max_fl.to_latex(f, index=False)
 
-with open('../tables/dedupe_leuven_splitting_l2.tex', 'wt') as f:
+with open('../../tables/dedupe_leuven_splitting_l2.tex', 'wt') as f:
     df_max_lf_l2.to_latex(f, index=False)
 
-with open('../tables/dedupe_leuven_clumping_l2.tex', 'wt') as f:
+with open('../../tables/dedupe_leuven_clumping_l2.tex', 'wt') as f:
     df_max_fl_l2.to_latex(f, index=False)
 
     

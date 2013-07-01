@@ -3,47 +3,22 @@ import sys
 import os
 import errno
 
-sys.path.append('/home/markhuberty/Documents/dedupe/examples/patent_example')
+#sys.path.append('/home/markhuberty/Documents/dedupe/examples/patent_example')
 import patent_util
 
 citl_file_root = '../../data/citl_data/geocoded/citl_geocoded_%s.csv'
-patent_file_root = '../dedupe/%s_weighted/patstat_output.csv'
+patent_file_root = '../../data/dedupe_script_output/'
 
+patent_files = os.listdir(patent_file_root)
+patent_files = [f for f in patent_files if 'csv' in f]
+countries = [f[-6:-4] for f in patent_files]
+patent_file_dict = dict(zip(countries, patent_files))
 
-eu27 = ['at',
-        'bg',
-        'be',
-        'it',
-        'gb',
-        'fr',
-        'de',
-        'sk',
-        'se',
-        'pt',
-        'pl',
-        'hu',
-        'ie',
-        'ee',
-        'es',
-        'cy',
-        'cz',
-        'nl',
-        'si',
-        'ro',
-        'dk',
-        'lt',
-        'lu',
-        'lv',
-        'mt',
-        'fi',
-        'el',
-        ]
-
-for country in eu27:
+for country in countries:
     print country
 
     citl_file = citl_file_root % country.upper()
-    patent_file = patent_file_root % country
+    patent_file = patent_file_root + patent_file_dict[country]
 
     try:
         df_patent = pd.read_csv(patent_file)
@@ -57,7 +32,7 @@ for country in eu27:
     # Homogenize and write out
     df_citl = df_citl.drop_duplicates()
 
-    df_patent = df_patent[['cluster_id_r1', 'Name', 'Lat', 'Lng']]
+    df_patent = df_patent[['cluster_id', 'Name', 'Lat', 'Lng']]
 
     cluster_agg_dict = {'Name': patent_util.consolidate_unique,
                         'Lat': patent_util.consolidate_geo,
@@ -65,7 +40,7 @@ for country in eu27:
                         }
 
     df_patent_consolidated = patent_util.consolidate(df_patent,
-                                                     'cluster_id_r1',
+                                                     'cluster_id',
                                                      cluster_agg_dict
                                                      )
 
