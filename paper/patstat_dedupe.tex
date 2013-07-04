@@ -436,8 +436,8 @@ formal definition of \texttt{recall}: true retrieved matches as a
 share of all retrieved matches.\footnote{This method for computing
   precision and recall reflects a \textit{group-level} view of the
   matching problem. In that view, the critical metric is how many IDs
-  were assigned to a common group, compared with a ground truth
-  estimate for how should have been assigned. This is not the only
+  were assigned to a common group, compared with how many should have
+  been so assigned. This is not the only
   metric. Instead, we might have considered a \textit{pairwise}
   approach, where we wish to know how many IDs were correctly
   connected to each other, compared with a ground truth. The
@@ -474,17 +474,27 @@ share of all retrieved matches.\footnote{This method for computing
       Patent precision & ID Recall & Patent recall\\
       \hline
       1 & 5 & 1 & 1 &
-      \multirow{3}{*}{$P_{id=1} = \frac{2}{3}$} &
-      \multirow{3}{*}{$P_{id=1, patent} = \frac{6}{9}$} &     
-      \multirow{3}{*}{$R_{id=1} = \frac{2}{2}$} & 
-      \multirow{3}{*}{$R_{id=1, patent} = \frac{6}{6}$}\\
+      \multirow{5}{*}{$P_{id} = \frac{3}{5}$} &
+      \multirow{5}{*}{$P_{patent} = \frac{5 + 1 + 7}{18}$} &     
+      \multirow{5}{*}{$R_{id} = \frac{4}{5}$} & 
+      \multirow{5}{*}{$R_{patent} = \frac{5 + 1 + 7 + 2}{18}$}\\
+      \cline{1-4}
       2 & 1 & 1 & 1 & & & &\\
+      \cline{1-4}
       3 & 3 & 1 & 2 & & & &\\
-      \hline
-      4 & 7 & 2 & 3 & 1 & 1 &1 & 1 \\
+      \cline{1-4}
+      4 & 7 & 2 & 2 & & & &\\
+      \cline{1-4}
+      5 & 2 & 2 & 3 & & & &\\
     \end{tabular}
     \caption{Stylized example for calculating precision and recall values for \texttt{dedupe} in
-      reference to the Leuven dataset.}
+      reference to the Leuven dataset. For ID precision note that we
+      correctly assign 3 PATSTAT IDs to unique \texttt{dedupe} IDs:
+      1=2, 2=1, and 4=2. For ID recall, we assign 4 IDs to unique
+      groups (1=1, 2=1, 4=2, and 5=2). The same analysis holds for
+      patent-level data. As we should expect, in this instance
+      precision suffers (due to clumping 4 and 5 together, and
+      clumping 3 with 1 and 2), compared with recall.}
     \label{tab:precision-calc}
   \end{table}
 
