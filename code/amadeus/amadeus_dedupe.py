@@ -38,21 +38,18 @@ import patent_util
 import re
 import sys
 import time
-
-
-# Finally load dedupe 
-import dedupe
-from dedupe.distance import cosine
-sys.modules['cosine'] = cosine
-
-def integer_diff(a, b):
-    r = 1.0 / (abs(a-b) + 1)
-    return r
+import ipcSectorCompare
 
 # Finally load dedupe 
 import dedupe
-from dedupe.distance import cosine
-sys.modules['cosine'] = cosine
+
+def dbase_diff(s1, s2):
+    if s1 == s2:
+        return 0
+    return 1
+
+# Finally load dedupe 
+import dedupe
 
 # ## Logging
 # Dedupe uses Python logging to show or suppress verbose output. Added
@@ -90,9 +87,9 @@ recall_weight = float(inputs[3])
 
 this_date = datetime.datetime.now().strftime('%Y-%m-%d')
 input_file = input_file_dir + '/' + 'dedupe_input_' + country + '.csv'
-output_file = output_file_dir + '/' + 'patstat_output_' + this_date + '_' + country + '.csv'
-settings_file = 'patstat_settings_' + this_date + '_' + country + '.json'
-training_file = 'patstat_training_' + this_date + '_' + country + '.json'
+output_file = output_file_dir + '/' + 'amadeus_output_' + this_date + '_' + country + '.csv'
+settings_file = 'amadeus_settings_' + this_date + '_' + country + '.json'
+training_file = 'amadeus_training_' + this_date + '_' + country + '.json'
 
 print input_file
 print output_file
@@ -107,20 +104,19 @@ dupes=5
 # Import the data
 print 'importing data ...'
 input_df = pd.read_csv(input_file)
-input_df.Class.fillna('', inplace=True)
-input_df.Coauthor.fillna('', inplace=True)
-input_df.Lat.fillna('0.0', inplace=True)
-input_df.Lng.fillna('0.0', inplace=True)
-input_df.Name.fillna('', inplace=True)
+input_df.ipc_sector.fillna('', inplace=True)
+input_df.lat.fillna('0.0', inplace=True)
+input_df.lng.fillna('0.0', inplace=True)
+input_df.name.fillna('', inplace=True)
 
 # Read the data into a format dedupe can use
 data_d = patent_util.readDataFrame(input_df)
 
-# Build the comparators for class and coauthor
-coauthors = [row['Coauthor'] for cidx, row in data_d.items()]
-classes = [row['Class'] for cidx, row in data_d.items()]
-class_comparator = dedupe.distance.cosine.CosineSimilarity(classes)
-coauthor_comparator = dedupe.distance.cosine.CosineSimilarity(coauthors)
+# Build the comparators for ipc/sector
+ipc_list = [i.split(' ') for i,d in zip(input_df.ipc_sector, input_df.dbase) if d=='patstat']
+sectors = [i for i, d in zip(input_df.ipc_sector, input_df.dbase) if d=='amadeus']
+
+ipc_sector_comparator = ipcSectorCompare.ipcSectorCompare(sectors, ipc_list)
 
 # Training
 if os.path.exists(settings_file):
@@ -131,14 +127,10 @@ else:
     # To train dedupe, we feed it a random sample of records.
     data_sample = dedupe.dataSample(data_d, 10 * input_df.shape[0])
     # Define the fields dedupe will pay attention to
-    fields = {'Name': {'type': 'String', 'Has Missing':True},
+    fields = {'name': {'type': 'String', 'Has Missing':True},
               'LatLong': {'type': 'LatLong', 'Has Missing':True},
-              'Class': {'type': 'Custom', 'comparator':class_comparator},
-              'Coauthor': {'type': 'Custom', 'comparator': coauthor_comparator},
-              'patent_ct':{'type': 'Custom', 'comparator': integer_diff},
-              'patent_ct_name': {'type': 'Interaction',
-                                 'Interaction Fields': ['Name', 'patent_ct']
-                                 }
+              'ipc_sector': {'type': 'Custom', 'comparator':ipc_sector_comparator},
+              'dbase': {'type':'Custom', 'comparator': dbase_diff}
               }
 
     # Create a new deduper object and pass our data model to it.
