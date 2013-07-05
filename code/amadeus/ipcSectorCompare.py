@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import scipy.stats as ss
-
+import operator
 
 def compute_bayes_probs(df_ipc):
     """
@@ -86,37 +86,30 @@ class ipcSectorCompare:
 
         self.weighted_probs = self.prob_matrix * self.ipc_probs
         self.prob_dict = self.weighted_probs.to_dict()
+        self.sectors = self.prob_matrix.index.values
 
     def __call__(self, sector, ipcs, distance_type='prob'):
 
-        if distance_type not in ['rank', 'prob']:
+        if distance_type not in ['rank', 'prob', 'maxprob']:
             raise ValueError("distance_type must be one of rank or prob")
 
-        sector_probs = self.query_all_sector_probs(ipcs)
+        sector_probs = [self.prob_dict[i] for i in ipcs if i in self.prob_dict]
+        #sector_probs = self.query_all_sector_probs(ipcs)
 
         if sector_probs is not None:
             if distance_type == 'prob':
-                dist_val = sector_probs.ix[sector]
+                dist_val = sum([p[sector] for p in sector_probs])# )sector_probs.ix[sector]
+            elif distance_type == 'maxprob':
+                dist_val = max([p[sector] for p in sector_probs])
             else:
-                sector_ranks = sector_probs.rank(ascending=False)
-                dist_val = sector_ranks.ix[sector]
+                sector_total_probs = {}
+                for s in self.sectors:
+                    sector_total_probs[s]= sum([p[s] for p in sector_probs])
+                this_p = sector_total_probs[sector]
+                all_p = sorted(sector_total_probs.values())
+                dist_val = all_p.index(this_p)
+                #dist_val = pd.Series(sector_total_probs).rank().ix[sector]
 
             return dist_val
         return np.nan
 
-
-    def query_all_sector_probs(self, ipcs):
-        """
-        Given some IPCS, return the sector probabilities for all sectors
-        """
-
-        # We have to trap potential indexerrors:
-        #ipcs = [i for i in ipcs if i in self.prob_matrix.columns]
-
-        if len(ipcs) > 0:
-            #weighted_s_probs = self.prob_matrix * self.ipc_probs
-            subset_s_probs = self.weighted_probs[ipcs]
-            p_s = subset_s_probs.sum(axis=1)
-            return p_s
-        return None
-    
