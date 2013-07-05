@@ -10,15 +10,20 @@ pword = inputs[1]
 # Set up MySQL connection
 db=MySQLdb.connect(host='localhost',
                    port=3306,
-                   user='markhuberty',
-                   passwd='huberty_patstat',
+                   user=username,
+                   passwd=pword,
                    db = 'patstatOct2011'
                    )
 
 id_query = """
 SELECT
-   appln_auth, COUNT(appln_abstract), COUNT(appln_id) FROM tls201_appln INNER JOIN tls203_appln_abstr ON appln_id GROUP BY country
+   appln_auth, COUNT(appln_abstract), COUNT(tls201_appln.appln_id)
+   FROM tls201_appln INNER JOIN tls203_appln_abstr
+   ON tls201_appln.appln_id=tls203_appln_abstr.appln_id
+   WHERE tls203_appln_abstr.appln_abstract IS NOT NULL AND tls203_appln_abstr.appln_abstract!=''
+   GROUP BY appln_auth
 
 """
 
 appln_counts = psql.frame_query(id_query, con=db)
+appln_counts.to_csv('patstat_abstract_counts_bycountry.csv', index=False)

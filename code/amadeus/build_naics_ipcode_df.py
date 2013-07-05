@@ -62,13 +62,14 @@ for idx, f in enumerate(patstat_files):
                           how='inner'
                           )
 
-    joint_file = joint_file[['naics', 'Class', 'cluster_id']]
-    joint_file.columns = ['naics', 'ipc_codes', 'patstat_cluster']
+    joint_file = joint_file[['company_name', 'naics', 'Class', 'cluster_id']]
+    joint_file.columns = ['company_name', 'naics', 'ipc_codes', 'patstat_cluster']
 
     global_ipc_codes = [' '.join(ipc.split('**')) if isinstance(ipc, str) else ''
                         for ipc in joint_file.ipc_codes]
 
-    df_temp = pd.DataFrame({'naics': joint_file.naics,
+    df_temp = pd.DataFrame({'company_name': joint_file.company_name,
+                            'naics': joint_file.naics,
                             'cluster_id': joint_file.patstat_cluster,
                             'ipc_codes': global_ipc_codes}
                            )
@@ -79,6 +80,9 @@ for idx, f in enumerate(patstat_files):
     else:
         df_all = pd.concat([df_all, df_temp], axis=0, ignore_index=True)
 
+df_all = df_all.drop_duplicates()
+df_all = df_all.dropna()
+print df_all.shape
 df_all.to_csv('naics_ipc_df.csv', index=False)
     
     
