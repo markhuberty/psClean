@@ -24,7 +24,6 @@ For details on how the dedupe algorithm works, see
 https://github.com/open-city/dedupe
 """
 
-import AsciiDammit
 import collections
 import csv
 import datetime
@@ -34,11 +33,16 @@ import numpy as np
 import optparse
 import os
 import pandas as pd
-import patent_util
 import re
 import sys
 import time
 import ipcSectorCompare
+
+
+
+sys.path.append('../dedupe')
+import AsciiDammit
+import patent_util
 
 # Finally load dedupe 
 import dedupe
@@ -48,8 +52,51 @@ def dbase_diff(s1, s2):
         return 0
     return 1
 
-# Finally load dedupe 
-import dedupe
+
+
+def readDataFrame(df, set_delim='**'):
+    """
+    Read in our data from a pandas DataFrame as an in-memory database.
+    Reformat the data into a dictionary of records,
+    where the key is a unique record ID and each value is a 
+    [frozendict](http://code.activestate.com/recipes/414283-frozen-dictionaries/) 
+    (hashable dictionary) of the row fields.
+
+    Remap columns for the following cases:
+    - Lat and Long are mapped into a single LatLong tuple
+    - Class and Coauthor are stored as delimited strings but mapped into sets
+
+    **Currently, dedupe depends upon records' unique ids being integers
+    with no integers skipped. The smallest valued unique id must be 0 or
+    1. Expect this requirement will likely be relaxed in the future.**
+    """
+
+    data_d = {}
+
+    for idx, dfrow in df.iterrows():
+        # print type(dfrow)
+        row_out = {}
+        row_type = dfrow['dbase']
+        if row_type == 'patstat':
+            ipc_codes = dfrow['ipc_sector'].split(set_delim)
+            ipc_codes = [i for i in ipc_codes if len(i.strip()) > 0]
+        else:
+            ipc_codes = str(dfrow['ipc_sector']).split('.')[0]
+
+        if isinstance(dfrow['name'], str):
+            name = dfrow['name']
+        else:
+            name = ''
+        # row_out['Coauthor_Count'] = len(coauthors)
+        # row_out['Class_Count'] = len(classes)
+        row_out['LatLong'] = (float(dfrow['lat']), float(dfrow['lng']))
+        row_out['name'] = name
+        row_out['ipc_sector'] = ipc_codes
+        row_out['dbase'] = row_type
+        row_tuple = [(k, v) for (k, v) in row_out.items()]
+        data_d[idx] = dedupe.core.frozendict(row_tuple)
+            
+    return data_d
 
 # ## Logging
 # Dedupe uses Python logging to show or suppress verbose output. Added
@@ -86,7 +133,7 @@ recall_weight = float(inputs[3])
 # Set the input / output and training files
 
 this_date = datetime.datetime.now().strftime('%Y-%m-%d')
-input_file = input_file_dir + '/' + 'dedupe_input_' + country + '.csv'
+input_file = input_file_dir + '/' + 'patstat_amadeus_input_' + country + '.csv'
 output_file = output_file_dir + '/' + 'amadeus_output_' + this_date + '_' + country + '.csv'
 settings_file = 'amadeus_settings_' + this_date + '_' + country + '.json'
 training_file = 'amadeus_training_' + this_date + '_' + country + '.json'
@@ -110,13 +157,27 @@ input_df.lng.fillna('0.0', inplace=True)
 input_df.name.fillna('', inplace=True)
 
 # Read the data into a format dedupe can use
-data_d = patent_util.readDataFrame(input_df)
+data_d = readDataFrame(input_df)
 
 # Build the comparators for ipc/sector
-ipc_list = [i.split(' ') for i,d in zip(input_df.ipc_sector, input_df.dbase) if d=='patstat']
-sectors = [i for i, d in zip(input_df.ipc_sector, input_df.dbase) if d=='amadeus']
+# This loads in a pre-matched set of names and builds from there
+naics_ipc = pd.read_csv('naics_ipc_df.csv')
+naics_ipc = naics_ipc[['company_name', 'naics', 'ipc_codes']]
+naics_ipc = naics_ipc.dropna()
+naics_ipc.naics = naics_ipc.naics.astype(int).astype(str)
 
-ipc_sector_comparator = ipcSectorCompare.ipcSectorCompare(sectors, ipc_list)
+naics_ipc['naics_2dig'] = [str(int(n))[:2] for n in naics_ipc.naics]
+
+ipc_3dig = []
+for ipc_str in naics_ipc.ipc_codes:
+        i_split = ipc_str.split(' ')
+        i_split = [i[:3] for i in i_split if i != '' and i != ' ']
+        ipc_3dig.append(i_split)
+
+ipc_sector_comparator = ipcSectorCompare.ipcSectorCompare(naics_ipc.naics_2dig,
+                                                          ipc_3dig,
+                                                          ipcSectorCompare.compute_bayes_probs
+                                                          )
 
 # Training
 if os.path.exists(settings_file):
@@ -125,7 +186,7 @@ if os.path.exists(settings_file):
 
 else:
     # To train dedupe, we feed it a random sample of records.
-    data_sample = dedupe.dataSample(data_d, 10 * input_df.shape[0])
+    data_sample = dedupe.dataSample(data_d, 3 * input_df.shape[0])
     # Define the fields dedupe will pay attention to
     fields = {'name': {'type': 'String', 'Has Missing':True},
               'LatLong': {'type': 'LatLong', 'Has Missing':True},
