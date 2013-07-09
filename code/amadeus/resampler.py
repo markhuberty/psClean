@@ -16,12 +16,12 @@ def random_sampler(d1, d2, N):
     idx2 = np.random.choice(d2, n_across, replace=True)
 
     # Then walk in some within-db stuff so we learn to reject it
-    within_samples1 = within_sampler(d1)
-    within_samples2 = within_sampler(d2)
+    within_samples1 = within_sampler(d1, n_within)
+    within_samples2 = within_sampler(d2, n_within)
     
     idx_pairs = zip(idx1, idx2)
-    idx_pairs.extend(within_samples1, n_within)
-    idx_pairs.extend(within_samples2, n_within)
+    idx_pairs.extend(within_samples1)
+    idx_pairs.extend(within_samples2)
     np.random.shuffle(idx_pairs)
     return idx_pairs
 
