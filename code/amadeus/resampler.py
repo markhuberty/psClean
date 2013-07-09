@@ -1,17 +1,28 @@
 import numpy as np
+import math
 
 def random_sampler(d1, d2, N):
     """
     Given 2 sets of indices, return N random
     pairs w/0 repl
     """
+
+    n_across = math.ceil(0.75 * N)
+    n_within = math.ceil(0.125 * N)
     np.random.shuffle(d1)
     np.random.shuffle(d2)
 
-    idx1 = np.random.choice(d1, N, replace=True)
-    idx2 = np.random.choice(d2, N, replace=True)
+    idx1 = np.random.choice(d1, n_across, replace=True)
+    idx2 = np.random.choice(d2, n_across, replace=True)
 
+    # Then walk in some within-db stuff so we learn to reject it
+    within_samples1 = within_sampler(d1)
+    within_samples2 = within_sampler(d2)
+    
     idx_pairs = zip(idx1, idx2)
+    idx_pairs.extend(within_samples1, n_within)
+    idx_pairs.extend(within_samples2, n_within)
+    np.random.shuffle(idx_pairs)
     return idx_pairs
 
 
@@ -27,3 +38,12 @@ def split_dataSample(data_d, N):
 
     data_sample = [(data_d[idx1], data_d[idx2]) for idx1, idx2 in idx]
     return data_sample
+
+
+def within_sampler(idx, N):
+
+    out = []
+    for i in range(N):
+        pair = np.random.choice(idx, 2)
+        out.append(tuple(pair))
+    return out

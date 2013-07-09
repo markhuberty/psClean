@@ -37,7 +37,7 @@ import re
 import sys
 import time
 import ipcSectorCompare
-
+import resampler
 
 
 sys.path.append('../dedupe')
@@ -186,7 +186,10 @@ if os.path.exists(settings_file):
 
 else:
     # To train dedupe, we feed it a random sample of records.
-    data_sample = dedupe.dataSample(data_d, 3 * input_df.shape[0])
+    #data_sample = dedupe.dataSample(data_d, 3 * input_df.shape[0])
+
+    data_sample = resampler.split_dataSample(data_d, 3 * input_df.shape[0])
+    
     # Define the fields dedupe will pay attention to
     fields = {'name': {'type': 'String', 'Has Missing':True},
               'LatLong': {'type': 'LatLong', 'Has Missing':True},
