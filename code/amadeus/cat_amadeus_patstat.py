@@ -31,12 +31,19 @@ eu27 = ['at',
         'gr'
         ]
 
+amadeus_input_root = '../../data/amadeus/input/'
+amadeus_output_root = '../../data/amadeus/patstat_amadeus/'
+patstat_root = '../../data/dedupe_script_output/consolidated/'
+
 for country in eu27:
+    print country
+    amadeus_file = amadeus_input_root + 'clean_geocoded_%s.txt' % country.upper()
+    patstat_file = patstat_root + 'patstat_consolidated_%s.csv' % country
 
-    amadeus_file = 'clean_geocoded_%s.txt' % country.upper()
-    patstat_file = 'patstat_consolidated_%s.csv' % country
-
-    df_amadeus = pd.read_csv(amadeus_file)
+    try:
+        df_amadeus = pd.read_csv(amadeus_file, sep='\t')
+    except:
+        continue
     df_amadeus = df_amadeus[['company_name',
                              'latitude',
                              'longitude',
@@ -51,10 +58,15 @@ for country in eu27:
                           'dbase_id'
                           ]
     df_amadeus['dbase'] = 'amadeus'
+    naics_str = ['' if np.isnan(n) else str(int(n)) for n in df_amadeus.ipc_sector]
+    df_amadeus.ipc_sector = naics_str
     df_amadeus = df_amadeus.drop_duplicates()
 
-    df_patstat = pd.read_csv(patstat_file)
-    df_patstat = df_patstat[['Name'
+    try:
+        df_patstat = pd.read_csv(patstat_file)
+    except:
+        continue
+    df_patstat = df_patstat[['Name',
                              'Lat',
                              'Lng',
                              'Class',
@@ -68,10 +80,14 @@ for country in eu27:
                           'dbase_id'
                           ]
     df_patstat = df_patstat.drop_duplicates()
+    df_patstat['dbase'] = 'patstat'
 
-    df_out = pd.concat([[df_patstat, df_amadeus]],
-                       ignore_index=True
+    df_out = pd.concat([df_patstat, df_amadeus],
+                       ignore_index=True,
+                       axis=0
                        )
 
-    outfile_name = 'patstat_amadeus_input_%s.csv' % country
+    outfile_name = amadeus_output_root + 'patstat_amadeus_input_%s.csv' % country
     df_out.to_csv(outfile_name)
+
+

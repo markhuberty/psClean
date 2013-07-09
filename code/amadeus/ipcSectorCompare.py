@@ -88,7 +88,14 @@ class ipcSectorCompare:
         self.prob_dict = self.weighted_probs.to_dict()
         self.sectors = self.prob_matrix.index.values
 
-    def __call__(self, sector, ipcs, distance_type='prob'):
+    def __call__(self, s1, s2, distance_type='prob'):
+
+        if isinstance(s1, str):
+            sector = s1
+            ipcs = s2
+        else:
+            sector = s2
+            ipcs = s1
 
         if distance_type not in ['rank', 'prob', 'maxprob']:
             raise ValueError("distance_type must be one of rank or prob")

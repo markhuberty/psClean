@@ -11,7 +11,7 @@ for idx, f in enumerate(patstat_files):
     patstat_file = pd.read_csv(patstat_output + f)
     country = f[0:2] ## files of form stuff_countrycode.csv
     print country
-    amadeus_filename = '/home/markhuberty/Documents/psClean/data/amadeus/clean_geocoded_%s.txt' % country.upper()
+    amadeus_filename = '/home/markhuberty/Documents/psClean/data/amadeus/input/clean_geocoded_%s.txt' % country.upper()
     try:
         amadeus_file = pd.read_csv(amadeus_filename, sep='\t')
     except:
@@ -35,7 +35,8 @@ for idx, f in enumerate(patstat_files):
                             'cluster_id': joint_file.patstat_cluster,
                             'ipc_codes': global_ipc_codes}
                            )
-
+    df_temp = df_temp.drop_duplicates()
+    df_temp = df_temp.dropna()
 
     if idx == 0:
         df_all = df_temp
