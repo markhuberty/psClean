@@ -193,7 +193,6 @@ else:
     # Define the fields dedupe will pay attention to
     fields = {'name': {'type': 'String', 'Has Missing':True},
               'LatLong': {'type': 'LatLong', 'Has Missing':True},
-              'ipc_sector': {'type': 'Custom', 'comparator':ipc_sector_comparator},
               'dbase': {'type':'Custom', 'comparator': dbase_diff}
               }
 
