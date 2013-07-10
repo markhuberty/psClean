@@ -1,5 +1,34 @@
 import pandas as pd
 
+eu27_abbrev = {'austria':'at',
+               'bulgaria':'bg',
+               'belgium':'be',
+               'italy':'it',
+               'uk':'gb',
+               'france':'fr',
+               'germany':'de',
+               'slovakia':'sk',
+               'sweden':'se',
+               'portugal':'pt',
+               'poland':'pl',
+               'hungary':'hu',
+               'ireland':'ie',
+               'estonia':'ee',
+               'spain':'es',
+               'cyprus':'cy',
+               'czeck republic':'cz',
+               'netherlands':'nl',
+               'slovenia':'si',
+               'romania':'ro',
+               'denmark':'dk',
+               'lithuania':'lt',
+               'luxembourg':'lu',
+               'latvia':'lv',
+               'malta':'mt',
+               'finland':'fi',
+               'greece':'el',
+               'greece':'gr'
+               }
 
 
 eu27 = ['at',
@@ -35,11 +64,15 @@ eu27 = ['at',
 firm_ids = pd.read_csv('../../data/amadeus/company_legal_ids.csv')
 abbrev_dict = {}
 for idx, row in firm_ids.iterrows():
-    country = row['country']
-    country_abbrev = eu27[country]
+    country = row['country'].lower()
 
-    this_code = row['code'].lower()
-    this_descr = row['descr'].lower()
+    try:
+        country_abbrev = eu27_abbrev[country]
+    except KeyError:
+        continue
+
+    this_code = row['codes_ascii'].lower()
+    this_descr = row['descr_ascii'].lower()
     this_code = re.sub('\.', '', this_code)
     if country_abbrev in abbrev_dict:
         abbrev_dict[country_abbrev]['code'] += '|' + this_code + '|' + ' '.join(this_code)
@@ -59,8 +92,11 @@ amadeus_output_root = '../../data/amadeus/patstat_amadeus/'
 patstat_root = '../../data/dedupe_script_output/consolidated/'
 
 for country in eu27:
-    re_code = re_code_dict[country]
-    re_descr = re_descr_dict[country]
+    if country in re_code_dict:
+        re_code = re_code_dict[country]
+        re_descr = re_descr_dict[country]
+    else:
+        re_code, re_descr = None, None
     
     print country
     amadeus_file = amadeus_input_root + 'clean_geocoded_%s.txt' % country.upper()
@@ -94,26 +130,29 @@ for country in eu27:
         continue
 
     # Identify likely firms and dump the rest
-    is_firm = [True if re_code.search(n) or re_descr.search(n) else False for n in df_patstat.Name]
-    df_firms = df_patstat[is_firm]
+    
     df_patstat.sort(columns=['patent_ct', 'coauthor_ct'],
                     ascending=[False, False],
                     inplace=True
                     )
 
     row_ct = int(0.1 * df_patstat.shape[0])
-    df_patstat = pd.concat([df_firms, df_patstat[:row_ct]],
-                           ignore_index=True
-                           )
+    df_merge = df_patstat[:row_ct]
     
+    if re_code:
+        is_firm = [True if re_code.search(n) or re_descr.search(n) else False for n in df_patstat.Name]
+        df_firms = df_patstat[is_firm]
+
     
-    df_patstat = df_patstat[['Name',
-                             'Lat',
-                             'Lng',
-                             'Class',
-                             'cluster_id'
-                             ]
-                            ]
+    df_merge = pd.concat([df_merge, df_firms], ignore_index=True)
+    
+    df_patstat = df_merge[['Name',
+                           'Lat',
+                           'Lng',
+                           'Class',
+                           'cluster_id'
+                           ]
+                          ]
     df_patstat.columns = ['name',
                           'lat',
                           'lng',

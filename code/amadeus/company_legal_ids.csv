@@ -101,7 +101,7 @@ Lda,Portugal,Sociedade por Quotas Limitada,Lda,Sociedade por Quotas Limitada
 LDC,Bahamas,Limited Duration Company,LDC,Limited Duration Company
 LLC,USA,Limited Liability Company,LLC,Limited Liability Company
 LLP,USA,Limited Liability Partnership,LLP,Limited Liability Partnership
-Ltd.,Various,Limited,Ltd.,Limited
+Ltd.,UK,Limited,Ltd.,Limited
 Ltda,Brazil,Sociedade por Quotas de Responsabiliadade Limitada,Ltda,Sociedade por Quotas de Responsabiliadade Limitada
 Ltée.,Canada,Limitée,Ltee.,Limitee
 N.A.,USA,National Association,N.A.,National Association
@@ -119,7 +119,7 @@ Oy,Finland,OsakeyhtiÃ¶,Oy,OsakeyhtiAP
 OYJ,Finland,Julkinen osakeyhtiÃ¶,OYJ,Julkinen osakeyhtiAP
 P/L,Australia,Pty. Ltd.,P/L,Pty. Ltd.
 PC Ltd,Australia,Public Company Limited by Shares ,PC Ltd,Public Company Limited by Shares 
-PLC,Various,Public Limited Company,PLC,Public Limited Company
+PLC,UK,Public Limited Company,PLC,Public Limited Company
 PMA,Indonesia,Penenaman Modal Asing,PMA,Penenaman Modal Asing
 PMDN,Indonesia,Penanaman Modal Dalam Negeri,PMDN,Penanaman Modal Dalam Negeri
 PrC,Ireland,Private Company limited by shares,PrC,Private Company limited by shares
@@ -186,3 +186,5 @@ TLS,Turkey,TÃ¼rk Limited Sirket,TLS,TA1/4rk Limited Sirket
 VEB,East Germany,Volkseigner Betrieb,VEB,Volkseigner Betrieb
 VOF,Vennootschap onder firma,,VOF,
 v.o.s.,Czech Rep,Verejna obchodni spolecnost,v.o.s.,Verejna obchodni spolecnost
+Ltd.,Ireland,,,
+Ltd.,Ireland,,,
