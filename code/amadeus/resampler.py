@@ -8,8 +8,8 @@ def random_sampler(d1, d2, N):
     pairs w/0 repl
     """
 
-    n_across = int(math.ceil(0.75 * N))
-    n_within = int(math.ceil(0.125 * N))
+    n_across = int(math.ceil(0.90 * N))
+    n_within = int(math.ceil(0.05 * N))
     np.random.shuffle(d1)
     np.random.shuffle(d2)
 

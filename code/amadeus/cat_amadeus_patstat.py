@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 
 eu27_abbrev = {'austria':'at',
                'bulgaria':'bg',
@@ -16,7 +17,7 @@ eu27_abbrev = {'austria':'at',
                'estonia':'ee',
                'spain':'es',
                'cyprus':'cy',
-               'czeck republic':'cz',
+               'czech republic':'cz',
                'netherlands':'nl',
                'slovenia':'si',
                'romania':'ro',
@@ -61,7 +62,7 @@ eu27 = ['at',
         'gr'
         ]
 
-firm_ids = pd.read_csv('../../data/amadeus/company_legal_ids.csv')
+firm_ids = pd.read_csv('company_legal_ids.csv')
 abbrev_dict = {}
 for idx, row in firm_ids.iterrows():
     country = row['country'].lower()
@@ -71,14 +72,21 @@ for idx, row in firm_ids.iterrows():
     except KeyError:
         continue
 
-    this_code = row['codes_ascii'].lower()
-    this_descr = row['descr_ascii'].lower()
-    this_code = re.sub('\.', '', this_code)
+    this_code = re.sub(' ', '', row['codes_ascii'].lower())
+    this_code = '^' + this_code + '|' + this_code + '$'
+    this_descr = row['description_ascii'].lower().split(' ')[0]
+    this_descr = '^' + this_descr + '|' + this_descr + '$'
+    regex_code = re.sub('\.', '', this_code)
+
+    # regex_code = this_code + '|' + re.sub('\s{2,}', ' ', ' '.join(this_code))
+    # regex_code = re.sub('\^ ', '^', regex_code)
+    # regex_code = re.sub(' \$', '$', regex_code)
+
     if country_abbrev in abbrev_dict:
-        abbrev_dict[country_abbrev]['code'] += '|' + this_code + '|' + ' '.join(this_code)
+        abbrev_dict[country_abbrev]['code'] += '|' + regex_code
         abbrev_dict[country_abbrev]['descr'] += '|' + this_descr
     else:
-        abbrev_dict[country_abbrev] = {'code':this_code, 'descr': this_descr}
+        abbrev_dict[country_abbrev] = {'code':regex_code, 'descr': this_descr}
 
 re_code_dict = {}
 re_descr_dict = {}
@@ -130,7 +138,10 @@ for country in eu27:
         continue
 
     # Identify likely firms and dump the rest
-    
+    df_patstat.Name.fillna('', inplace=True)
+    coauthor_ct = [len(c.split('**')) if isinstance(c, str) else 0
+                   for c in df_patstat.Coauthor]
+    df_patstat['coauthor_ct'] = coauthor_ct
     df_patstat.sort(columns=['patent_ct', 'coauthor_ct'],
                     ascending=[False, False],
                     inplace=True
@@ -140,7 +151,9 @@ for country in eu27:
     df_merge = df_patstat[:row_ct]
     
     if re_code:
-        is_firm = [True if re_code.search(n) or re_descr.search(n) else False for n in df_patstat.Name]
+        is_firm = [True if re_code.search(re.sub('\s+', '', n))
+                   or re_descr.search(re.sub('\s+', '', n)) else False
+                   for n in df_patstat.Name]
         df_firms = df_patstat[is_firm]
 
     
