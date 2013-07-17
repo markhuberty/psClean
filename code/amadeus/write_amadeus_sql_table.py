@@ -44,36 +44,59 @@ db=MySQLdb.connect(host='localhost',
 delete_query = """DELETE FROM amadeus_parent_child WHERE country='%s'"""
 
 for country in eu27:
-    amadeus_file = amadeus_input_root + 'clean_geocoded_%s.txt' % country.upper()
+    print country
+    amadeus_file = amadeus_input_root + 'large_%s.txt' % country.upper()
 
-    df = pd.read_csv(amadeus_file, sep='\t')
-    df = df[['bvdep id number',
-             'company name',
-             'naics 2007 core code',
-             'Latitude',
-             'Longitude',
-             'immediate shareholder bvdep id number',
-             'domestic uo bvdep id number',
-             'global uo bvdep id number'
-             ]
-            ]
-    df.columns = ['bvdep_id',
-                  'company_name',
-                  'naics_2007'm
-                  'lat',
-                  'long',
-                  'is_bvdep_id',
-                  'd_uo_bvdep_id',
-                  'g_up_bvdep_id'
-                  ]
-    df['country'] = country
+    try:
+        df_chunker = pd.read_csv(amadeus_file, sep='\t', chunksize=100000)
+    except:
+        continue
 
+    
     # Dump prior rows for same country
     cursor = db.cursor()
     cursor.execute(delete_query % country)
 
-    # Write in the new data
-    psql.write_frame(df, 'amadeus_parent_child', if_exists='append', con=db, flavor='mysql')
+    for df in df_chunker:
+        df = df[['bvdep id number',
+                 'company name',
+                 'naics 2007 core code',
+                 'Latitude',
+                 'Longitude',
+                 'immediate shareholder bvdep id number',
+                 'domestic uo bvdep id number',
+                 'global uo bvdep id number'
+                 ]
+                ]
+
+        df.columns = ['bvdep_id',
+                      'company_name',
+                      'naics_2007',
+                      'lat',
+                      'lng',
+                      'is_bvdep_id',
+                      'd_uo_bvdep_id',
+                      'g_uo_bvdep_id'
+                      ]
+
+        df['country'] = country
+
+        df['bvdep_id'] = df['bvdep_id'].astype(str)
+        df['is_bvdep_id'] = df['is_bvdep_id'].astype(str)
+        df['d_uo_bvdep_id'] = df['d_uo_bvdep_id'].astype(str)
+        df['g_uo_bvdep_id'] = df['g_uo_bvdep_id'].astype(str)
+
+    
+        df['company_name'].fillna('', inplace=True)
+        df['lat'].fillna(0.0, inplace=True)
+        df['lng'].fillna(0.0, inplace=True)
+        df['naics_2007'].fillna(0, inplace=True)
+        df['is_bvdep_id'].fillna('NONE', inplace=True)
+        df['d_uo_bvdep_id'].fillna('NONE', inplace=True)
+        df['g_uo_bvdep_id'].fillna('NONE', inplace=True)
+        
+        # Write in the new data
+        psql.write_frame(df, 'amadeus_parent_child', if_exists='append', con=db, flavor='mysql')
 
     
 

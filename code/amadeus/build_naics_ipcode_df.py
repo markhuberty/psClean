@@ -48,7 +48,7 @@ for idx, f in enumerate(patstat_files):
     patstat_c.reset_index(inplace=True)
     country = f[-6:-4] ## files of form stuff_countrycode.csv
     print country
-    amadeus_filename = '/home/markhuberty/Documents/psClean/data/amadeus/clean_geocoded_%s.txt' % country.upper()
+    amadeus_filename = '/home/markhuberty/Documents/psClean/data/amadeus/input/clean_geocoded_%s.txt' % country.upper()
     try:
         amadeus_file = pd.read_csv(amadeus_filename, sep='\t')
     except:
@@ -61,16 +61,17 @@ for idx, f in enumerate(patstat_files):
                           right_on='company_name',
                           how='inner'
                           )
-
     joint_file = joint_file[['naics', 'Class', 'cluster_id']]
     joint_file.columns = ['naics', 'ipc_codes', 'patstat_cluster']
+    joint_file['country'] = country
 
     global_ipc_codes = [' '.join(ipc.split('**')) if isinstance(ipc, str) else ''
                         for ipc in joint_file.ipc_codes]
 
     df_temp = pd.DataFrame({'naics': joint_file.naics,
                             'cluster_id': joint_file.patstat_cluster,
-                            'ipc_codes': global_ipc_codes}
+                            'ipc_codes': global_ipc_codes,
+                            'country': joint_file.country}
                            )
 
 

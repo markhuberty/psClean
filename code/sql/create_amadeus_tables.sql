@@ -22,29 +22,30 @@ DROP TABLE IF EXISTS `amadeus_parent_child`;
 
 CREATE TABLE `amadeus_parent_child` (
 
-  bvdep_id varchar(10) NOT NULL default '0',
+  bvdep_id varchar(15) NOT NULL default '0',
 
   country varchar(2) NOT NULL default '',
 
-  company_name text NOT NULL,
+  company_name text NOT NULL default '',
 
-  lat float(8),
+  lat float(6,4),
 
-  long float(8),
+  lng float(6,4),
 
   naics_2007 int(4),
   
-  is_bvdep_id varchar(10),
+  is_bvdep_id varchar(15),
   
-  d_uo_bvdep_id varchar(10),
+  d_uo_bvdep_id varchar(15),
 
-  g_uo_bvdep_id varchar(10),
+  g_uo_bvdep_id varchar(15),
 
   PRIMARY KEY  (bvdep_id),
+  
+  KEY (is_bvdep_id),
+  
+  INDEX (is_bvdep_id)
 
-  INDEX (is_bvdep_id), 
-
-  KEY (is_bvdep_id)
 
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 

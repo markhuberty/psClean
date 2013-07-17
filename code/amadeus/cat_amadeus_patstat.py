@@ -163,7 +163,9 @@ for country in eu27:
                            'Lat',
                            'Lng',
                            'Class',
-                           'cluster_id'
+                           'cluster_id',
+                           'patent_ct',
+                           'coauthor_ct'
                            ]
                           ]
     df_patstat.columns = ['name',
