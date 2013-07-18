@@ -65,3 +65,37 @@ def accumulate_naics(db_con):
     return id_dict
 
 test = accumulate_naics(db)
+
+def unroll_naics(naics_accum, generics):
+    new_naics_assignments = []
+    for id in naics_accum:
+        old_naics = naics_accum[id]['id_naics']
+        new_naics = pd.Series(naics_accum[id]['child_naics'])
+        
+        new_naics = new_naics[new_naics > 0]
+
+        is_generic = new_naics.isin(generics)
+
+        if not all(is_generic):
+            new_naics = new_naics[~is_generic]
+
+        naics_counts = new_naics.value_counts()
+
+        if len(naics_counts) > 0:
+            max_naics = naics_counts.index[0]
+        else:
+            max_naics = old_naics
+        new_naics_assignments.append((id, max_naics))
+        for cid in naics_accum[id]['child_ids']:
+            new_naics_assignments.append((cid, max_naics))
+    return new_naics_assignments
+                                                                                
+test_unroll = unroll_naics(test, [5511, 5411, 5239, 5311])
+
+df_test_unroll = pd.DataFrame(test_unroll, columns=['bvdep_id', 'new_naics'])
+
+insert_query = """UPDATE amadeus_parent_child SET new_naics=%d WHERE bvdep_id='%s'"""
+
+db_cursor = db.cursor()
+for idx, row in df_test_unroll.iterrows():
+    db_cursor.execute(insert_query % (row['new_naics'], row['bvdep_id']))
