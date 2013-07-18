@@ -2,6 +2,8 @@ import pandas as pd
 import re
 import sys
 import os
+import MySQLdb
+import pandas.io.sql as psql
 
 patstat_output = '/home/markhuberty/Documents/psClean/data/dedupe_script_output/'
 patstat_files = os.listdir(patstat_output)
@@ -40,7 +42,7 @@ agg_dict = {'Name': consolidate_unique,
             'Class': ipc_consolidate
             }
 
-
+amadeus_query = """SELECT company_name, new_naics FROM amadeus_parent_child WHERE country='%s'"""
 
 for idx, f in enumerate(patstat_files):
     patstat_file = pd.read_csv(patstat_output + f)
@@ -50,20 +52,25 @@ for idx, f in enumerate(patstat_files):
     patstat_c.reset_index(inplace=True)
     country = f[-6:-4] ## files of form stuff_countrycode.csv
     print country
-    amadeus_filename = '/home/markhuberty/Documents/psClean/data/amadeus/input/clean_geocoded_%s.txt' % country.upper()
-    try:
-        amadeus_file = pd.read_csv(amadeus_filename, sep='\t')
-    except:
-        print 'no amadeus file found for %s' % country
-        continue
 
+    db=MySQLdb.connect(host='localhost',
+                   port = 3306,
+                   user='markhuberty',
+                   passwd='patstat_huberty',
+                   db = 'patstatOct2011'
+                   )
+    amadeus_file = psql.frame_query(amadeus_query % country, con=db)
+
+    if amadeus_file.shape[0]==0:
+        continue
+    
     joint_file = pd.merge(patstat_c,
                           amadeus_file,
                           left_on='Name',
                           right_on='company_name',
                           how='inner'
                           )
-    joint_file = joint_file[['naics', 'Class', 'cluster_id']]
+    joint_file = joint_file[['new_naics', 'Class', 'cluster_id']]
     joint_file.columns = ['naics', 'ipc_codes', 'patstat_cluster']
     joint_file['country'] = country
 
@@ -82,6 +89,6 @@ for idx, f in enumerate(patstat_files):
     else:
         df_all = pd.concat([df_all, df_temp], axis=0, ignore_index=True)
 
-df_all.to_csv('naics_ipc_df.csv', index=False)
+df_all.to_csv('naics_ipc_df_new.csv', index=False)
     
     
