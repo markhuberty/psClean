@@ -42,7 +42,9 @@ agg_dict = {'Name': consolidate_unique,
             'Class': ipc_consolidate
             }
 
-amadeus_query = """SELECT company_name, new_naics FROM amadeus_parent_child WHERE country='%s'"""
+amadeus_query = """SELECT company_name, naics_2007, new_naics
+                   FROM amadeus_parent_child
+                   WHERE country='%s'"""
 
 for idx, f in enumerate(patstat_files):
     patstat_file = pd.read_csv(patstat_output + f)
@@ -61,6 +63,10 @@ for idx, f in enumerate(patstat_files):
                    )
     amadeus_file = psql.frame_query(amadeus_query % country, con=db)
 
+    amadeus_file['naics_c'] = [n if np.isnan(m) else m
+                               for n, m in zip(amadeus_file.naics_2007, amadeus_file.new_naics)
+                               ]
+
     if amadeus_file.shape[0]==0:
         continue
     
@@ -70,7 +76,7 @@ for idx, f in enumerate(patstat_files):
                           right_on='company_name',
                           how='inner'
                           )
-    joint_file = joint_file[['new_naics', 'Class', 'cluster_id']]
+    joint_file = joint_file[['naics_c', 'Class', 'cluster_id']]
     joint_file.columns = ['naics', 'ipc_codes', 'patstat_cluster']
     joint_file['country'] = country
 
