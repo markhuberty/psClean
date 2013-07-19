@@ -65,8 +65,12 @@ for node in g.nodes():
         
 # Set up the label propagation
 
-def propagate_labels(G, maxiter=10, generics=['5511', '5411', '5239', '5417'], weight=False, unk='unknown'):
-    label_attr = nx.get_node_attributes(G, 'label')
+def propagate_labels(G, maxiter=10,
+                     generics=['5511', '5411', '5239', '5417'],
+                     weight=False,
+                     label='label',
+                     unk='unknown'):
+    label_attr = nx.get_node_attributes(G, label)
     unknown_counts = np.sum([1 if l==unk else 0
                              for l in label_attr.values()])
     unknown_diff = 1
@@ -86,26 +90,27 @@ def propagate_labels(G, maxiter=10, generics=['5511', '5411', '5239', '5417'], w
             if iter % 10000 == 0:
                 print 'Node %d, in while iteration %d' % (iter, while_counter)
 
-            if g.node[n]['label'] != unk:
+            if g.node[n][label] != unk:
                 continue
             n_neighbors = G[n]
 
-            # pdb.set_trace()
-
             n_label_dict = {}
             for k in n_neighbors:
-                l = G.node[k]['label']
+                l = G.node[k][label]
                 if l != unk and not l in generics:
                     if l in n_label_dict:
-                        n_label_dict[l] += 1
+                        val = 1
+                        if weight:
+                            val = G[n][l]['weight']
+                        n_label_dict[l] += val
                     else:
-                        n_label_dict[l] = 1
+                        n_label_dict[l] = val
 
             # pdb.set_trace()
             if len(n_label_dict) > 0:
                 new_label_idx = np.argmax(n_label_dict.values())
                 new_label = n_label_dict.keys()[new_label_idx]
-                G.node[n]['label'] = new_label
+                G.node[n][label] = new_label
                 if new_label == unk:
                     unknown_diff += 1
                 else:
@@ -113,7 +118,7 @@ def propagate_labels(G, maxiter=10, generics=['5511', '5411', '5239', '5417'], w
         while_counter += 1
     return G
 
-test_labels = propagate_labels(g, maxiter=100)
+test_labels = propagate_labels(g, maxiter=100, unk='unknown', label='naics')
 
 import re
 def unroll_labels_to_names(G, df_names, re_firm):
