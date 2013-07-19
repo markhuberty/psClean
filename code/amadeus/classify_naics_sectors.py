@@ -6,37 +6,39 @@ import numpy as np
 
 from sklearn import feature_extraction as fe
 
-df = pd.read_csv('naics_ipc_df.csv')
-df.set_index(['company_name', 'naics'], inplace=True)
+df = pd.read_csv('naics_ipc_df_new.csv')
+df.set_index(['cluster_id', 'naics'], inplace=True)
 
-df_agg = df.groupby(df.index).agg(agg_dict)
+# Reduce this to only 1:1 name:naics counts
+naics_cluster_cts = df.groupby(level=0).size()
+singleton_clusters = naics_cluster_cts[naics_cluster_cts==1].index
+df.reset_index(inplace=True)
+df_singular = df[df.cluster_id.isin(singleton_clusters)]
 
-naics_ipc_df = pd.read_csv('naics_ipc_df_singles.csv')
-df = naics_ipc_df.dropna()
+df_singular = df_singular.dropna()
+df_singular = df_singular[df_singular.naics > 0]
 
-df['ipc_1dig'] = [' '.join([i[0] for i in re.split('\s+', ipc.strip())])
-                  if len(ipc) > 0 else '' for ipc in df.ipc_codes]
+df_singular['ipc_3dig'] = [' '.join([i[:3] for i in re.split('\s+', ipc.strip())])
+                  if len(ipc) > 0 else '' for ipc in df_singular.ipc_codes]
 
+df_singular['naics_2dig'] = [str(n)[:2] for n in df_singular.naics]
 
-df['ipc_3dig'] = [' '.join([i[:3] for i in re.split('\s+', ipc.strip())])
-                  if len(ipc) > 0 else '' for ipc in df.ipc_codes]
+df_singular['naics_str'] = df_singular.naics.astype(str)
+generics = ['5511', '5411', '5311', '5239']
+df_singular = df_singular[~df_singular.naics_str.isin(generics)]
 
-df['naics_2dig'] = [str(n)[:2] for n in df.naics]
-
-naics_diverse = [str(n)[:2] if str(n)[0] not in ['2', '3', '4', '5'] else str(int(n))
-                 for n in df.naics]
-
-df['naics_diverse'] = naics_diverse
-
+naics_cts = df_singular.naics_str.value_counts()
+naics_tokeep = naics_cts[naics_cts > 10].index
+df_singular = df_singular[df_singular.naics_str.isin(naics_tokeep)]
 #df = df[~df.naics.isin([3339, 3329])]
 
 #df = df[df.naics_2dig.isin(['31', '32', '33'])]
 
 vectorizer = fe.text.CountVectorizer()#(token_pattern='\w{3}')
-v_fit = vectorizer.fit(df.ipc_codes)
-v_mat = vectorizer.transform(df.ipc_codes)
+v_fit = vectorizer.fit(df_singular.ipc_codes)
+v_mat = vectorizer.transform(df_singular.ipc_codes)
 
-df_mat = pd.DataFrame(v_mat.todense(), index=df.naics_2dig)
+df_mat = pd.DataFrame(v_mat.todense(), index=df_singular.naics_2dig)
 df_blah = df_mat.groupby(level=0).agg(sum)
 df_blah.to_csv('test_singles.csv')
 maxcts = df_blah.apply(np.argmax, axis=1)
@@ -50,9 +52,9 @@ from sklearn.naive_bayes import MultinomialNB
 nb = MultinomialNB()
 
 
-nb_fit = nb.fit(v_mat_tfidf, df.naics.values)
+nb_fit = nb.fit(v_mat_tfidf, df_singular.naics_2dig.values)
 nb_pred = nb_fit.predict(v_mat_tfidf)
-nb_score = cv.cross_val_score(nb, v_mat_tfidf, df.naics.values, cv=5)
+nb_score = cv.cross_val_score(nb, v_mat_tfidf, df_singular.naics_2dig.values, cv=5)
 
 nb_fit = nb.fit(v_mat, df.naics.values)
 nb_pred = nb_fit.predict(v_mat)
