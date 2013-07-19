@@ -65,10 +65,10 @@ for node in g.nodes():
         
 # Set up the label propagation
 
-def propagate_labels(G, maxiter=10, generics=['5511', '5411', '5239', '5417']):
-    naics_attr = nx.get_node_attributes(G, 'naics')
-    unknown_counts = np.sum([1 if na=='unknown' else 0
-                             for na in naics_attr.values()])
+def propagate_labels(G, maxiter=10, generics=['5511', '5411', '5239', '5417'], weight=False, unk='unknown'):
+    label_attr = nx.get_node_attributes(G, 'label')
+    unknown_counts = np.sum([1 if l==unk else 0
+                             for l in label_attr.values()])
     unknown_diff = 1
 
     if unknown_counts == 0:
@@ -86,7 +86,7 @@ def propagate_labels(G, maxiter=10, generics=['5511', '5411', '5239', '5417']):
             if iter % 10000 == 0:
                 print 'Node %d, in while iteration %d' % (iter, while_counter)
 
-            if g.node[n]['naics'] != 'unknown':
+            if g.node[n]['label'] != unk:
                 continue
             n_neighbors = G[n]
 
@@ -94,8 +94,8 @@ def propagate_labels(G, maxiter=10, generics=['5511', '5411', '5239', '5417']):
 
             n_label_dict = {}
             for k in n_neighbors:
-                l = G.node[k]['naics']
-                if l != 'unknown' and not l in generics:
+                l = G.node[k]['label']
+                if l != unk and not l in generics:
                     if l in n_label_dict:
                         n_label_dict[l] += 1
                     else:
@@ -105,8 +105,8 @@ def propagate_labels(G, maxiter=10, generics=['5511', '5411', '5239', '5417']):
             if len(n_label_dict) > 0:
                 new_label_idx = np.argmax(n_label_dict.values())
                 new_label = n_label_dict.keys()[new_label_idx]
-                G.node[n]['naics'] = new_label
-                if new_label == 'unknown':
+                G.node[n]['label'] = new_label
+                if new_label == unk:
                     unknown_diff += 1
                 else:
                     unknown_diff -= 1
