@@ -76,8 +76,8 @@ for idx, f in enumerate(patstat_files):
                           right_on='company_name',
                           how='inner'
                           )
-    joint_file = joint_file[['naics_c', 'Class', 'cluster_id']]
-    joint_file.columns = ['naics', 'ipc_codes', 'patstat_cluster']
+    joint_file = joint_file[['company_name', 'naics_c', 'Class', 'cluster_id']]
+    joint_file.columns = ['company_name', 'naics', 'ipc_codes', 'patstat_cluster']
     joint_file['country'] = country
 
     global_ipc_codes = [' '.join(ipc.split('**')) if isinstance(ipc, str) else ''

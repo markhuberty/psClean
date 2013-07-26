@@ -29,7 +29,7 @@ edgelist.name1.fillna('', inplace=True)
 edgelist.name2.fillna('', inplace=True)
 
 
-# re_firm = re.compile(' b v| n v')
+re_firm = re.compile(' b v| n v')
 # is_firm = [True if re_firm.search(n1) and re_firm.search(n2) else False
 #            for n1, n2 in zip(edgelist.name1, edgelist.name2)]
 # edgelist = edgelist[is_firm]
@@ -50,10 +50,52 @@ for idx, row in edgelist.iterrows():
         nodes[n1] = row['name1']
     if n2 not in nodes:
         nodes[n2] = row['name2']
+        
 
     
 g = nx.Graph()
 g.add_weighted_edges_from(ebunch)
+
+nl_authors.Name.fillna('', inplace=True)
+node_size = nl_authors.ix[g.nodes()]['patent_ct']
+node_name = nl_authors.ix[g.nodes()]['Name'] 
+node_color = ['blue' if re_firm.search(n) else 'red' for n in node_name]
+
+nx.set_node_attributes(g, 'size', dict(zip(g.nodes(), node_size)))
+nx.set_node_attributes(g, 'name', dict(zip(g.nodes(), node_name)))
+nx.set_node_attributes(g, 'color', dict(zip(g.nodes(), node_color)))
+
+cc = nx.connected_component_subgraphs(g)
+g_plot = cc[0]
+
+g_plot_layout = nx.graphviz_layout(g_plot, 'sfdp')
+
+edge_weight = nx.get_edge_attributes(g_plot, 'weight').values()
+node_size = nx.get_node_attributes(g_plot, 'size').values()
+node_size = [np.log10(n + 1) for n in node_size]
+
+import matplotlib.pyplot as plt
+
+nx.draw_networkx_edges(g_plot,
+                       g_plot_layout,
+                       edge_color=edge_weight,
+                       edge_vmin=np.min(edge_weight),
+                       edge_vmax=np.max(edge_weight),
+                       edge_cmap=plt.cm.get_cmap('Blues'),
+                       alpha=0.2,
+                       width=0.2
+                       )
+nx.draw_networkx_nodes(g_plot,
+                       g_plot_layout,
+                       alpha=0.5,
+                       node_size=node_size,
+                       linewidths=0.05
+                       )
+
+plt.axis('off')
+plt.savefig('nl_largest_cc_coauthor.png')
+plt.close()
+
 
 
 counter = 0
@@ -67,6 +109,13 @@ for node in g.nodes():
     g.node[node]['naics'] = naics
     if naics != 'unknown':
         counter += 1
+
+    if re_firm.search(g.node[node]['name']):
+        g.node[node]['color'] = 'red'
+    else:
+        g.node[node]['color'] = 'blue'
+
+    g.node[node]['size'] = nl_authors[nl_authors.Name==g.node[node]['name']].patent_ct
 
         
 # Set up the label propagation
@@ -172,7 +221,7 @@ test_unroll_subset.to_csv('nl_naics_propagation_subset.csv')
 ## assign them correctly.
 
 ## Observed problem: we don't do really well at getting some codes right, largely b/c
-## we're so sparse in the original labels.
+## we're so sparse in the original labels. (And limited homophily)
 
 
 import math
