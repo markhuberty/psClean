@@ -1,9 +1,10 @@
+import MySQLdb
+import numpy as np
+import os
 import pandas as pd
+import pandas.io.sql as psql
 import re
 import sys
-import os
-import MySQLdb
-import pandas.io.sql as psql
 
 patstat_output = '/home/markhuberty/Documents/psClean/data/dedupe_script_output/'
 patstat_files = os.listdir(patstat_output)
