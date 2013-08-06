@@ -84,7 +84,8 @@ for idx, f in enumerate(patstat_files):
     global_ipc_codes = [' '.join(ipc.split('**')) if isinstance(ipc, str) else ''
                         for ipc in joint_file.ipc_codes]
 
-    df_temp = pd.DataFrame({'naics': joint_file.naics,
+    df_temp = pd.DataFrame({'company_name': joint_file.company_name,
+                            'naics': joint_file.naics,
                             'cluster_id': joint_file.patstat_cluster,
                             'ipc_codes': global_ipc_codes,
                             'country': joint_file.country}

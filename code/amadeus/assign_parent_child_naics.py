@@ -66,6 +66,31 @@ def accumulate_naics(db_con):
 
 test = accumulate_naics(db)
 
+def unroll_all_naics(naics_accum, generics):
+    new_naics_assignments = []
+    for id in naics_accum:
+        old_naics = naics_accum[id]['id_naics']
+        new_naics = pd.Series(naics_accum[id]['child_naics'])
+        
+        new_naics = new_naics[new_naics > 0]
+        new_naics.append(pd.Series([old_naics]))
+
+        naics_counts = new_naics.value_counts()
+        id_vec = [id] * len(naics_counts)
+
+        temp = zip(id_vec, naics_counts.index, naics_counts.values)
+        new_naics_assignments.extend(id_vec)
+        for cid in naics_accum[id]['child_ids']:
+            cid_vec = [cid] * len(naics_counts)
+            new_naics_assignments.extend(zip(cid_vec, naics_counts.index, naics_counts.values))
+    return new_naics_assignments
+
+all_unrolled = unroll_all_naics(test, [])
+all_unrolled = [n for n in all_unrolled if len(n) == 3]
+df_unrolled = pd.DataFrame(all_unrolled, columns=['amadeus_id', 'naics', 'naics_ct'])
+df_unrolled.to_csv('amadeus_naics_map.csv', index=False)
+
+
 def unroll_naics(naics_accum, generics):
     new_naics_assignments = []
     for id in naics_accum:
