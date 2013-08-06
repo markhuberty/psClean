@@ -207,3 +207,15 @@ for country in eu27:
 
 
 
+        sorted_dist = sorted(record_dist, key=lambda x: (x[4], x[5], x[6]))
+        patstat_amadeus_match = sorted_dist[:n_matches]
+        patstat_amadeus_matches.extend(patstat_amadeus_matches)
+
+    all_record_matches.extend(patstat_amadeus_matches)
+
+df_out = pd.DataFrame(all_record_matches,
+                      columns=['patstat_name', 'amadeus_name',
+                               'patstat_id', 'amadeus_id',
+                               'lev_name_dist', 'jac_name_dist',
+                               'geo_dist', 'country']
+                      )
