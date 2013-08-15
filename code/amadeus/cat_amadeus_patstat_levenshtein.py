@@ -5,7 +5,7 @@ import re
 import re
 import string
 import fuzzy
-
+import time
 
 eu27_abbrev = {'austria':'at',
                'bulgaria':'bg',
@@ -37,6 +37,7 @@ eu27_abbrev = {'austria':'at',
                'greece':'gr'
                }
 
+n_matches = 3
 
 eu27 = ['at',
         'bg',
@@ -67,9 +68,17 @@ eu27 = ['at',
         'el',
         'gr'
         ]
-dmeta_hash = fuzzy.DMetaphone(4)
+
+dmeta_hash = fuzzy.DMetaphone(3)
 def namehash(n, hashfun):
     return hashfun(n)[0]
+
+
+def jaccard(s1, s2):
+    numer = s1.intersection(s2)
+    denom = s1.union(s2)
+    return len(numer) / float(len(denom))
+            
 
 firm_ids = pd.read_csv('company_legal_ids.csv')
 abbrev_dict = {}
@@ -108,6 +117,7 @@ amadeus_input_root = '../../data/amadeus/input/'
 amadeus_output_root = '../../data/amadeus/patstat_amadeus/'
 patstat_root = '../../data/dedupe_script_output/consolidated/'
 
+all_record_matches = []
 for country in eu27:
     if country in re_code_dict:
         re_code = re_code_dict[country]
@@ -116,19 +126,21 @@ for country in eu27:
         re_code, re_descr = None, None
     
     print country
-    amadeus_file = amadeus_input_root + 'clean_geocoded_%s.txt' % country.upper()
+    amadeus_file = amadeus_input_root + 'large_%s.txt' % country.upper()
     patstat_file = patstat_root + 'patstat_consolidated_%s.csv' % country
 
     try:
         df_amadeus = pd.read_csv(amadeus_file, sep='\t')
     except:
         continue
-    df_amadeus = df_amadeus[['company_name',
-                             'latitude',
-                             'longitude',
-                             'bvdep_id'
+    df_amadeus = df_amadeus[['company name',
+                             'Latitude',
+                             'Longitude',
+                             'bvdep id number'
                              ]
                             ]
+    df_amadeus.columns = ['company_name', 'latitude',
+                          'longitude', 'bvdep_id']
 
     try:
         df_patstat = pd.read_csv(patstat_file)
@@ -137,16 +149,6 @@ for country in eu27:
 
     # Identify likely firms and dump the rest
     df_patstat.Name.fillna('', inplace=True)
-    coauthor_ct = [len(c.split('**')) if isinstance(c, str) else 0
-                   for c in df_patstat.Coauthor]
-    df_patstat['coauthor_ct'] = coauthor_ct
-    df_patstat.sort(columns=['patent_ct', 'coauthor_ct'],
-                    ascending=[False, False],
-                    inplace=True
-                    )
-
-    row_ct = int(0.1 * df_patstat.shape[0])
-    df_merge = df_patstat[:row_ct]
     
     if re_code:
         is_firm = [True if re_code.search(re.sub('\s+', '', n))
@@ -154,27 +156,52 @@ for country in eu27:
                    for n in df_patstat.Name]
         df_firms = df_patstat[is_firm]
 
-    
+        df_firms.columns = ['dbase_id', 'name', 'patent_ct', 'coauthor',
+                            'lat', 'lng', 'class']
     # Hash the names for both amadeus and patstat
+    
+    df_firms['name'] = [n.strip() if isinstance(n, str) else None for n in df_firms.name]
+    df_amadeus['company_name'] = [n.strip() if isinstance(n, str) else None
+                                  for n in df_amadeus.company_name]
+    
     df_firms['name_hash'] = [namehash(n, dmeta_hash) if isinstance(n, str) else None
-                             for n in df_patstat.name]
+                             for n in df_firms.name]
     df_amadeus['name_hash'] = [namehash(n, dmeta_hash) if isinstance(n, str) else None
                                for n in df_amadeus.company_name]
 
-    df_firms['name_split'] = [set(n.split(' ')) if instance(s, str) else None
+    df_firms['name_split'] = [set(s.split(' ')) if isinstance(s, str) else None
                               for s in df_firms.name]
-    df_amadeus['name_split'] = [set(n.split(' ')) if instance(s, str) else None
+    df_amadeus['name_split'] = [set(s.split(' ')) if isinstance(s, str) else None
                                 for s in df_amadeus.company_name]
-    df_amadeus.set_index('name_hash', inplace=True)
+
+    df_firms['first_n'] = [n.strip()[:2] if isinstance(n, str) else None
+                                for n in df_firms.name]
+    df_amadeus['first_n'] = [n.strip()[:2] if isinstance(n, str) else None
+                                  for n in df_amadeus.company_name]
+    df_amadeus.set_index('first_n', inplace=True)
 
     # Then walk over the firms and compute distances
-
+    start_time = time.time()
+    patstat_amadeus_matches = []
+    counter = 0
     for idx, prow in df_firms.iterrows():
-        df_amadeus_temp = df_amadeus.ix[row['name_hash']]
+        counter += 1
+        if counter > 0 and counter % 1000 == 0:
+            this_time = time.time() - start_time
+            avg_time = this_time / counter
+            print 'Processed %d records for %s in %f seconds' % (counter, country, this_time)
+            print 'Average record time: %f' % avg_time
 
-        if df_amadeus.shape[0] > 0:
-            record_dist = []
-            for idx, arow in df_amadeus_temp:
+
+        try:
+            df_amadeus_temp = df_amadeus.ix[prow['first_n']]
+        except KeyError:
+            continue
+
+        record_dist = []
+        if len(df_amadeus_temp.shape)==2:
+
+            for jdx, arow in df_amadeus_temp.iterrows():
                 lev_name_dist = Levenshtein.ratio(prow['name'].lower(),
                                                   arow['company_name'].lower()
                                                   )
@@ -185,33 +212,59 @@ for country in eu27:
                 jac_name_dist = 1 - jac_name_dist
 
                 geo_dist = None
-                if citl_record[1] != 0.0 and patstat_record[1] != 0.0:
+                if prow['lat'] != 0.0 and arow['latitude'] != 0.0:
                     geo_dist = haversine.compareLatLong((prow['lat'],
                                                          prow['lng']),
                                                         (arow['latitude'],
                                                          arow['longitude'])
                                                         )
-                record_dist.append(prow['name'],
-                                   arow['company_name'],
-                                   prow['dbase_id'],
-                                   arow['bvdep_id'],
-                                   lev_name_dist,
-                                   jac_name_dist,
-                                   geo_dist,
-                                   country
+                record_dist.append([prow['name'],
+                                    arow['company_name'],
+                                    prow['dbase_id'],
+                                    arow['bvdep_id'],
+                                    lev_name_dist,
+                                    jac_name_dist,
+                                    geo_dist,
+                                    country]
                                    )
                 
+                
         else:
-            continue
+            lev_name_dist = Levenshtein.ratio(prow['name'].lower(),
+                                              df_amadeus_temp['company_name'].lower()
+                                              )
+            jac_name_dist = jaccard(prow['name_split'],
+                                    df_amadeus_temp['name_split']
+                                    )
+            lev_name_dist = 1 - lev_name_dist
+            jac_name_dist = 1 - jac_name_dist
+
+            geo_dist = None
+            if prow['lat'] != 0.0 and df_amadeus_temp['latitude'] != 0.0:
+                geo_dist = haversine.compareLatLong((prow['lat'],
+                                                     prow['lng']),
+                                                    (df_amadeus_temp['latitude'],
+                                                     df_amadeus_temp['longitude'])
+                                                    )
+            record_dist.append([prow['name'],
+                                df_amadeus_temp['company_name'],
+                                prow['dbase_id'],
+                                df_amadeus_temp['bvdep_id'],
+                                lev_name_dist,
+                                jac_name_dist,
+                                geo_dist,
+                                country]
+                               )
 
 
 
 
         sorted_dist = sorted(record_dist, key=lambda x: (x[4], x[5], x[6]))
         patstat_amadeus_match = sorted_dist[:n_matches]
-        patstat_amadeus_matches.extend(patstat_amadeus_matches)
+        patstat_amadeus_matches.extend(patstat_amadeus_match)
 
     all_record_matches.extend(patstat_amadeus_matches)
+    print(len(all_record_matches))
 
 df_out = pd.DataFrame(all_record_matches,
                       columns=['patstat_name', 'amadeus_name',
@@ -219,3 +272,4 @@ df_out = pd.DataFrame(all_record_matches,
                                'lev_name_dist', 'jac_name_dist',
                                'geo_dist', 'country']
                       )
+df_out.to_csv('../../data/amadeus_patstat_candidate_matches.csv', index=False)
